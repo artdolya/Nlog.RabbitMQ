@@ -1,0 +1,21 @@
+# Folders #
+###################
+obj/
+bin/
+ClientBin/
+.vs/
+node_modules/
+**/wwwroot/lib/
+packages/
+**/logs/
+
+# File extentions #
+###################
+*.suo
+*.user
+*.svclog
+*.xap
+*.dotCover
+*.lock.json
+**/wwwroot/css/*.min.css
+**/wwwroot/js/*.min.js
