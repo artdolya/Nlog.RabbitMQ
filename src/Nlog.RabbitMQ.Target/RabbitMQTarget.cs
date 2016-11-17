@@ -12,7 +12,7 @@ using NLog.Targets;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Framing;
 
-namespace Nlog.Targets.RabbitMQ
+namespace Nlog.RabbitMQ.Target
 {
 	/// <summary>
 	/// TODO

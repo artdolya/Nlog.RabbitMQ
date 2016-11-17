@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Nlog.Targets.RabbitMQ
+namespace Nlog.RabbitMQ.Target
 {
 	public class LogLine
 	{

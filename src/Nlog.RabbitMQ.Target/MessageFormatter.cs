@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Layouts;
 
-namespace Nlog.Targets.RabbitMQ
+namespace Nlog.RabbitMQ.Target
 {
 	public static class MessageFormatter
 	{
