@@ -1,15 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5A26CA6D-64DF-4A0F-9FE2-D6BE96AB3F38}"
+	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Example", "src\Nlog.RabbitMQ.Example\Nlog.RabbitMQ.Example.csproj", "{F7150446-BD35-405B-B5FC-A0D0237C70A2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nlog.RabbitMQ.Target", "src\Nlog.RabbitMQ.Target\Nlog.RabbitMQ.Target.csproj", "{25B5A626-7902-44F7-9CEF-42DADF6C1D20}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Nlog.RabbitMQ.Target", "src\Nlog.RabbitMQ.Target\Nlog.RabbitMQ.Target.xproj", "{25B5A626-7902-44F7-9CEF-42DADF6C1D20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,8 +35,5 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F7150446-BD35-405B-B5FC-A0D0237C70A2} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
 		{25B5A626-7902-44F7-9CEF-42DADF6C1D20} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {3D5741F5-9CEB-45E5-BD45-996AB1930EB7}
 	EndGlobalSection
 EndGlobal
