@@ -21,6 +21,8 @@ namespace Nlog.RabbitMQ.Example
 			};
 
 			logger.Log(logEventInfo);
-		}
+
+            LogManager.Shutdown();
+        }
 	}
 }
