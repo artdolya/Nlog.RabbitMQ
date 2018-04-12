@@ -23,42 +23,49 @@ namespace Nlog.RabbitMQ.Target
 			return GetMessageInner(useJSON, false, layout, info, fields);
 		}
 
-		public static string GetMessageInner(bool useJSON, bool useLayoutAsMessage, Layout layout, LogEventInfo info, IList<Field> fields)
+		public static string GetMessageInner(bool useJSON, bool useLayoutAsMessage, Layout layout, LogEventInfo logEvent, IList<Field> fields)
 		{
 			if (!useJSON)
-				return layout.Render(info);
+				return layout.Render(logEvent);
 
 			var logLine = new LogLine
 			{
-				TimeStampISO8601 = info.TimeStamp.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
-				Message = useLayoutAsMessage ? layout.Render(info) : info.FormattedMessage,
-				Level = info.Level.Name,
+				TimeStampISO8601 = logEvent.TimeStamp.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
+				Message = useLayoutAsMessage ? layout.Render(logEvent) : logEvent.FormattedMessage,
+				Level = logEvent.Level.Name,
 				Type = "amqp",
-				Source = new Uri(string.Format("nlog://{0}/{1}", HostName, info.LoggerName))
+				Source = new Uri(string.Format("nlog://{0}/{1}", HostName, logEvent.LoggerName))
 			};
 
-			logLine.AddField("exception", info.Exception);
+			logLine.AddField("exception", logEvent.Exception);
 
-			if (info.Properties.Count > 0 && info.Properties.ContainsKey("fields"))
-				foreach (var kv in (IEnumerable<KeyValuePair<string, object>>)info.Properties["fields"])
-					logLine.AddField(kv.Key, kv.Value);
+            if (logEvent.HasProperties)
+            {
+                if (logEvent.Properties.ContainsKey("fields"))
+                {
+                    foreach (var kv in (IEnumerable<KeyValuePair<string, object>>)logEvent.Properties["fields"])
+                        logLine.AddField(kv.Key, kv.Value);
+                }
 
-			if (info.Properties.Count > 0 && info.Properties.ContainsKey("tags"))
-				foreach (var tag in (IEnumerable<string>)info.Properties["tags"])
-					logLine.AddTag(tag);
+                if (logEvent.Properties.ContainsKey("tags"))
+                {
+                    foreach (var tag in (IEnumerable<string>)logEvent.Properties["tags"])
+                        logLine.AddTag(tag);
+                }
 
-			foreach (var propertyPair in info.Properties)
-			{
-				var key = propertyPair.Key as string;
-				if (key == null || key == "tags" || key == "fields")
-					continue;
+                foreach (var propertyPair in logEvent.Properties)
+                {
+                    var key = propertyPair.Key as string;
+                    if (key == null || key == "tags" || key == "fields")
+                        continue;
 
-				logLine.AddField((string)propertyPair.Key, propertyPair.Value);
-			}
+                    logLine.AddField(key, propertyPair.Value);
+                }
+            }
 
 			if (fields != null)
 				foreach (Field field in fields)
-					logLine.AddField(field.Key, field.Name, field.Layout.Render(info));
+					logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
 
 			logLine.EnsureADT();
 

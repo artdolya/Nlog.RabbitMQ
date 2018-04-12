@@ -33,61 +33,33 @@ namespace Nlog.RabbitMQ.Target
 		private readonly Queue<Tuple<byte[], IBasicProperties, string>> _UnsentMessages
 			= new Queue<Tuple<byte[], IBasicProperties, string>>(512);
 
-		private object _sync = new object();
-		private volatile bool _closed = false;
-
 		public RabbitMQTarget()
 		{
 			Layout = "${message}";
 			Compression = CompressionTypes.None;
 			Fields = new List<Field>();
-
-			//PrepareConnectionShutdownEventHandler();
 		}
 
 		#region Properties
 
-		private string _VHost = "/";
-
 		/// <summary>
 		/// 	Gets or sets the virtual host to publish to.
 		/// </summary>
-		public string VHost
-		{
-			get { return _VHost; }
-			set
-			{
-				if (value != null) _VHost = value;
-			}
-		}
-
-		private string _UserName = "guest";
+		public string VHost { get; set; } = "/";
 
 		/// <summary>
 		/// 	Gets or sets the username to use for
 		/// 	authentication with the message broker. The default
 		/// 	is 'guest'
 		/// </summary>
-		public string UserName
-		{
-			get { return _UserName; }
-			set { _UserName = value; }
-		}
-
-		private string _Password = "guest";
+		public string UserName { get; set; } = "guest";
 
 		/// <summary>
 		/// 	Gets or sets the password to use for
 		/// 	authentication with the message broker.
 		/// 	The default is 'guest'
 		/// </summary>
-		public string Password
-		{
-			get { return _Password; }
-			set { _Password = value; }
-		}
-
-		private ushort _Port = 5672;
+		public string Password { get; set; } = "guest";
 
 		/// <summary>
 		/// 	Gets or sets the port to use
@@ -95,13 +67,7 @@ namespace Nlog.RabbitMQ.Target
 		/// 	listening port).
 		/// 	The default is '5672'.
 		/// </summary>
-		public ushort Port
-		{
-			get { return _Port; }
-			set { _Port = value; }
-		}
-
-		private Layout _Topic = "{0}";
+		public ushort Port { get; set; } = 5672;
 
 		///<summary>
 		///	Gets or sets the routing key (aka. topic) with which
@@ -109,29 +75,14 @@ namespace Nlog.RabbitMQ.Target
 		///	so on. An example could be setting this property to 'ApplicationType.MyApp.Web.{0}'.
 		///	The default is '{0}'.
 		///</summary>
-		public Layout Topic
-		{
-			get { return _Topic; }
-			set { _Topic = value; }
-		}
-
-		private IProtocol _Protocol = Protocols.DefaultProtocol;
+		public Layout Topic { get; set; } = "{0}";
 
 		/// <summary>
 		/// 	Gets or sets the AMQP protocol (version) to use
 		/// 	for communications with the RabbitMQ broker. The default 
 		/// 	is the RabbitMQ.Client-library's default protocol.
 		/// </summary>
-		public IProtocol Protocol
-		{
-			get { return _Protocol; }
-			set
-			{
-				if (value != null) _Protocol = value;
-			}
-		}
-
-		private string _HostName = "localhost";
+		public IProtocol Protocol { get; set; } = Protocols.DefaultProtocol;
 
 		/// <summary>
 		/// 	Gets or sets the host name of the broker to log to.
@@ -139,33 +90,15 @@ namespace Nlog.RabbitMQ.Target
 		/// <remarks>
 		/// 	Default is 'localhost'
 		/// </remarks>
-		public string HostName
-		{
-			get { return _HostName; }
-			set
-			{
-				if (value != null) _HostName = value;
-			}
-		}
-
-		private string _Exchange = "app-logging";
+		public string HostName { get; set; } = "localhost";
 
 		/// <summary>
 		/// 	Gets or sets the exchange to bind the logger output to.
 		/// </summary>
 		/// <remarks>
-		/// 	Default is 'log4net-logging'
+		/// 	Default is 'app-logging'
 		/// </remarks>
-		public string Exchange
-		{
-			get { return _Exchange; }
-			set
-			{
-				if (value != null) _Exchange = value;
-			}
-		}
-
-		private string _ExchangeType = "topic";
+		public string Exchange { get; set; } = "app-logging";
 
 		/// <summary>
 		///   Gets or sets the exchange type to bind the logger output to.
@@ -173,19 +106,7 @@ namespace Nlog.RabbitMQ.Target
 		/// <remarks>
 		///   Default is 'topic'
 		/// </remarks>
-		public string ExchangeType
-		{
-			get { return _ExchangeType; }
-			set
-			{
-				if (String.IsNullOrEmpty(value))
-					return;
-
-				_ExchangeType = value;
-			}
-		}
-
-		private bool _Durable = true;
+		public string ExchangeType { get; set; } = "topic";
 
 		/// <summary>
 		/// 	Gets or sets the setting specifying whether the exchange
@@ -194,11 +115,7 @@ namespace Nlog.RabbitMQ.Target
 		/// <remarks>
 		/// 	Default is true
 		/// </remarks>
-		public bool Durable
-		{
-			get { return _Durable; }
-			set { _Durable = value; }
-		}
+		public bool Durable { get; set; } = true;
 
 		/// <summary>
 		/// 	Gets or sets the setting specifying whether the exchange
@@ -215,35 +132,18 @@ namespace Nlog.RabbitMQ.Target
 		/// </summary>
 		public string AppId { get; set; }
 
-		private int _MaxBuffer = 10240;
-
 		/// <summary>
 		/// Gets or sets the maximum number of messages to save in the case
 		/// that the RabbitMQ instance goes down. Must be >= 1. Defaults to 10240.
 		/// </summary>
-		public int MaxBuffer
-		{
-			get { return _MaxBuffer; }
-			set
-			{
-				if (value > 0) _MaxBuffer = value;
-			}
-		}
-
-		ushort _HeartBeatSeconds = 3;
+		public int MaxBuffer { get; set; } = 10240;
 
 		/// <summary>
 		/// Gets or sets the number of heartbeat seconds to have for the RabbitMQ connection.
 		/// If the heartbeat times out, then the connection is closed (logically) and then
 		/// re-opened the next time a log message comes along.
 		/// </summary>
-		public ushort HeartBeatSeconds
-		{
-			get { return _HeartBeatSeconds; }
-			set { _HeartBeatSeconds = value; }
-		}
-
-		bool _UseJSON;
+		public ushort HeartBeatSeconds { get; set; } = 3;
 
 		/// <summary>
 		/// Gets or sets whether to format the data in the body as a JSON structure.
@@ -254,69 +154,35 @@ namespace Nlog.RabbitMQ.Target
 		/// generated is logstash (http://logstash.net), elasticsearch (https://github.com/elasticsearch/elasticsearch)
 		/// and kibana (http://rashidkpc.github.com/Kibana/)
 		/// </summary>
-		public bool UseJSON
-		{
-			get { return _UseJSON; }
-			set { _UseJSON = value; }
-		}
-
-		bool _UseSsl;
+		public bool UseJSON { get; set; }
 
 		/// <summary>
 		/// Enables SSL support to connect to the Message Queue. If this is enabled, 
 		/// SslCertPath and SslCertPassphrase are required! For more information please
 		/// visit http://www.rabbitmq.com/ssl.html
 		/// </summary>
-		public bool UseSsl
-		{
-			get { return _UseSsl; }
-			set { _UseSsl = value; }
-		}
-
-		string _SslCertPath;
+		public bool UseSsl { get; set; }
 
 		/// <summary>
 		/// Location of client SSL certificate
 		/// </summary>
-		public string SslCertPath
-		{
-			get { return _SslCertPath; }
-			set { _SslCertPath = value; }
-		}
-
-		string _SslCertPassphrase;
+		public string SslCertPath { get; set; }
 
 		/// <summary>
 		/// Passphrase for generated SSL certificate defined in SslCertPath
 		/// </summary>
-		public string SslCertPassphrase
-		{
-			get { return _SslCertPassphrase; }
-			set { _SslCertPassphrase = value; }
-		}
-
-		DeliveryMode _DeliveryMode = DeliveryMode.NonPersistent;
+		public string SslCertPassphrase { get; set; }
 
 		/// <summary>
 		/// The delivery more, 1 for non-persistent, 2 for persistent
 		/// </summary>
-		public DeliveryMode DeliveryMode
-		{
-			get { return _DeliveryMode; }
-			set { _DeliveryMode = value; }
-		}
-
-		int _Timeout = 3000;
+		public DeliveryMode DeliveryMode { get; set; } = DeliveryMode.NonPersistent;
 
 		/// <summary>
 		/// The amount of milliseconds to wait when starting a connection
 		/// before moving on to next task
 		/// </summary>
-		public int Timeout
-		{
-			get { return _Timeout; }
-			set { _Timeout = value; }
-		}
+		public int Timeout { get; set; } = 3000;
 
 		/// <summary>
 		/// Gets or sets compression type. 
@@ -337,28 +203,20 @@ namespace Nlog.RabbitMQ.Target
 
 		protected override void Write(LogEventInfo logEvent)
 		{
-			Write(new AsyncLogEventInfo(logEvent, null));
-		}
-
-		protected override void Write(AsyncLogEventInfo logEvent)
-		{
-			if (_closed)
-			{
-				return;
-			}
-
-			var continuation = logEvent.Continuation;
-			var basicProperties = GetBasicProperties(logEvent.LogEvent);
-			var uncompressedMessage = GetMessage(logEvent.LogEvent);
+			var basicProperties = GetBasicProperties(logEvent);
+			var uncompressedMessage = GetMessage(logEvent);
 			var message = CompressMessage(uncompressedMessage);
-			var routingKey = GetTopic(logEvent.LogEvent);
+			var routingKey = GetTopic(logEvent);
 
 			if (_Model == null || !_Model.IsOpen)
-				StartConnection();
+				StartConnection(true);
 
 			if (_Model == null || !_Model.IsOpen)
 			{
-				AddUnsent(routingKey, basicProperties, message);
+				if (!AddUnsent(routingKey, basicProperties, message))
+				{
+					throw new InvalidOperationException("LogEvent discarded because RabbitMQ instance is offline and reached MaxBuffer");
+				}
 				return;
 			}
 
@@ -370,31 +228,35 @@ namespace Nlog.RabbitMQ.Target
 			}
 			catch (IOException e)
 			{
-				AddUnsent(routingKey, basicProperties, message);
-				if (continuation == null) throw;
-				continuation(e);
-				InternalLogger.Error("Could not send to RabbitMQ instance! {0}", e.ToString());
+				InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not send to RabbitMQ instance: {1}", Name, e.Message);
+				if (!AddUnsent(routingKey, basicProperties, message))
+					throw;
 			}
 			catch (ObjectDisposedException e)
 			{
-				AddUnsent(routingKey, basicProperties, message);
-				if (continuation == null) throw;
-				continuation(e);
-				//InternalLogger.Error("Could not write data to the network stream! {0}", e.ToString());
+				InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not send to RabbitMQ instance: {1}", Name, e.Message);
+				if (!AddUnsent(routingKey, basicProperties, message))
+					throw;
 			}
 
-			ShutdownAmqp(_Connection,
-				new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
-					"Could not talk to RabbitMQ instance", null));
 			// using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
+			var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
+					"Could not talk to RabbitMQ instance", null);
+			ShutdownAmqp(_Connection, shutdownEvenArgs);
 		}
 
-		private void AddUnsent(string routingKey, IBasicProperties basicProperties, byte[] message)
+		private bool AddUnsent(string routingKey, IBasicProperties basicProperties, byte[] message)
 		{
-			if (_UnsentMessages.Count < _MaxBuffer)
+			if (_UnsentMessages.Count < MaxBuffer)
+			{
 				_UnsentMessages.Enqueue(Tuple.Create(message, basicProperties, routingKey));
+				return true;
+			}
 			else
-				InternalLogger.Warn("MaxBuffer {0} filled. Ignoring message.", _MaxBuffer);
+			{
+				InternalLogger.Warn("RabbitMQTarget(Name={0}): MaxBuffer {1} filled. Ignoring message.", Name, MaxBuffer);
+				return false;
+			}
 		}
 
 		private void CheckUnsent()
@@ -403,14 +265,14 @@ namespace Nlog.RabbitMQ.Target
 			while (_UnsentMessages.Count > 0)
 			{
 				var tuple = _UnsentMessages.Dequeue();
-				InternalLogger.Info("publishing unsent message: {0}.", tuple);
+				InternalLogger.Info("RabbitMQTarget(Name={0}): Publishing unsent message: {1}.", Name, tuple);
 				Publish(tuple.Item1, tuple.Item2, tuple.Item3);
 			}
 		}
 
 		private void Publish(byte[] bytes, IBasicProperties basicProperties, string routingKey)
 		{
-			_Model.BasicPublish(_Exchange,
+			_Model.BasicPublish(Exchange,
 				routingKey,
 				true, basicProperties,
 				bytes);
@@ -418,14 +280,14 @@ namespace Nlog.RabbitMQ.Target
 
 		private string GetTopic(LogEventInfo eventInfo)
 		{
-			var routingKey = _Topic.Render(eventInfo);
+			var routingKey = Topic.Render(eventInfo);
 			routingKey = routingKey.Replace("{0}", eventInfo.Level.Name);
 			return routingKey;
 		}
 
 		private byte[] GetMessage(LogEventInfo info)
 		{
-			var msg = MessageFormatter.GetMessageInner(_UseJSON, this.UseLayoutAsMessage, Layout, info, this.Fields);
+			var msg = MessageFormatter.GetMessageInner(UseJSON, this.UseLayoutAsMessage, Layout, info, this.Fields);
 			return _Encoding.GetBytes(msg);
 		}
 
@@ -434,75 +296,104 @@ namespace Nlog.RabbitMQ.Target
 			return new BasicProperties
 			{
 				ContentEncoding = "utf8",
-				ContentType = _UseJSON ? "application/json" : "text/plain",
+				ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain",
 				AppId = AppId ?? @event.LoggerName,
 				Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event)),
 				UserId = UserName, // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
-				DeliveryMode = (byte) DeliveryMode
+				DeliveryMode = (byte)DeliveryMode
 			};
 		}
 
 		protected override void InitializeTarget()
 		{
 			base.InitializeTarget();
-
-			StartConnection();
+			StartConnection(false);
 		}
 
 		/// <summary>
 		/// Never throws
 		/// </summary>
-		private void StartConnection()
+		private void StartConnection(bool checkInitialized)
 		{
-			if (_closed)
+			if (_Model != null)
 			{
-				return;
+				if (_Model.IsOpen)
+					return;
+
+				var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
+						"Model not open to RabbitMQ instance", null);
+				ShutdownAmqp(_Connection, shutdownEvenArgs);
 			}
 
-			lock (_sync)
+			var t = Task.Factory.StartNew(() =>
 			{
-				var t = Task.Factory.StartNew(() =>
+				if (checkInitialized && !IsInitialized)
+					return;
+
+				if (_Model != null && _Model.IsOpen)
+					return;
+
+				IModel model = null;
+				IConnection connection = null;
+
+				try
 				{
+					connection = GetConnectionFac().CreateConnection();
+					connection.ConnectionShutdown += (s, e) => ShutdownAmqp(connection, e);
+
 					try
 					{
-						_Connection = GetConnectionFac().CreateConnection();
-						AddConnectionShutdownDelegate(_Connection);
-
-						try
-						{
-							_Model = _Connection.CreateModel();
-						}
-						catch (Exception e)
-						{
-							InternalLogger.Error("could not create model, {0}", e);
-						}
-
-						if (_Model != null && !Passive)
-						{
-							try
-							{
-								_Model.ExchangeDeclare(_Exchange, _ExchangeType, _Durable);
-							}
-							catch (Exception e)
-							{
-								if (_Model != null)
-								{
-									_Model.Dispose();
-									_Model = null;
-								}
-								InternalLogger.Error(string.Format("could not declare exchange, {0}", e));
-							}
-						}
+						model = connection.CreateModel();
 					}
 					catch (Exception e)
 					{
-						InternalLogger.Error(string.Format("could not connect to Rabbit instance, {0}", e));
+						InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not create model, {1}", Name, e.Message);
+						var shutdownConnection = connection;
+						connection = null;
+						shutdownConnection.Close(1000);
+						shutdownConnection.Abort(1000);
 					}
-				});
 
-				if (!t.Wait(TimeSpan.FromMilliseconds(Timeout)))
-					InternalLogger.Warn("starting connection-task timed out, continuing");
-			}
+					if (model != null && !Passive)
+					{
+						try
+						{
+							model.ExchangeDeclare(Exchange, ExchangeType, Durable);
+						}
+						catch (Exception e)
+						{
+							InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not declare exchange: {1}", Name, e.Message));
+							var shutdownConnection = connection;
+							connection = null;
+							model.Dispose();
+							model = null;
+							shutdownConnection.Close(1000);
+							shutdownConnection.Abort(1000);
+						}
+					}
+				}
+				catch (Exception e)
+				{
+					InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not connect to Rabbit instance: {1}", Name, e.Message));
+				}
+				finally
+				{
+					if (connection != null && model != null)
+					{
+						lock (SyncRoot)
+						{
+							if (_Model == null || !_Model.IsOpen)
+							{
+								_Connection = connection;
+								_Model = model;
+							}
+						}
+					}
+				}
+			});
+
+			if (!t.Wait(TimeSpan.FromMilliseconds(Timeout)))
+				InternalLogger.Warn("RabbitMQTarget(Name={0}): Starting connection-task timed out, continuing", Name);
 		}
 
 		private ConnectionFactory GetConnectionFac()
@@ -529,51 +420,51 @@ namespace Nlog.RabbitMQ.Target
 
 		private void ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
 		{
-			lock (_sync)
+			if (reason.ReplyCode != 200 /* Constants.ReplySuccess*/)
 			{
-				// I can't make this NOT hang when RMQ goes down
-				// and then a log message is sent...
+				InternalLogger.Warn("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
+			}
+			else
+			{
+				InternalLogger.Info("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
+			}
 
-				try
+			lock (SyncRoot)
+			{
+				if (connection != null && ReferenceEquals(connection, _Connection))
 				{
-					if (_Model != null && _Model.IsOpen
-						&& reason.ReplyCode != 504 //Constants.ChannelError
-						&& reason.ReplyCode != 320 //Constants.ConnectionForced
-					)
-						_Model.Abort(); //_Model.Close();
-				}
-				catch (Exception e)
-				{
-					InternalLogger.Error("could not close model, {0}", e);
-				}
+					var model = _Model;
 
-				try
-				{
-					if (connection != null && connection.IsOpen)
+					_Connection = null;
+					_Model = null;
+
+					try
 					{
-						AddConnectionShutdownDelegate(connection);
-						connection.Close(reason.ReplyCode, reason.ReplyText, 1000);
-						connection.Abort(1000); // you get 2 seconds to shut down!
+						if (model != null && model.IsOpen
+							&& reason.ReplyCode != 504 //Constants.ChannelError
+							&& reason.ReplyCode != 320 //Constants.ConnectionForced
+						)
+							model.Abort(); //model.Close();
+					}
+					catch (Exception e)
+					{
+						InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not close model: {1}", Name, e.Message);
+					}
+
+					try
+					{
+						if (connection.IsOpen)
+						{
+							connection.Close(reason.ReplyCode, reason.ReplyText, 1000);
+							connection.Abort(1000); // you get 2 seconds to shut down!
+						}
+					}
+					catch (Exception e)
+					{
+						InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not close connection: {1}", Name, e.Message);
 					}
 				}
-				catch (Exception e)
-				{
-					InternalLogger.Error("could not close connection, {0}", e);
-				}
 			}
-		}
-
-		/// <summary>
-		/// EventHandler<ShutdownEventArgs> for RabbitMQ.Client from 3.5.x version
-		/// </summary>
-		private void ShutdownAmqp35(object sender, ShutdownEventArgs e)
-		{
-			ShutdownAmqp((IConnection) sender, e);
-		}
-
-		private void AddConnectionShutdownDelegate(IConnection connection)
-		{
-			connection.ConnectionShutdown += (o, a) => ShutdownAmqp(connection, a);
 		}
 
 		#endregion
@@ -581,11 +472,9 @@ namespace Nlog.RabbitMQ.Target
 		// Dispose calls CloseTarget!
 		protected override void CloseTarget()
 		{
-			_closed = true;
-			ShutdownAmqp(_Connection,
-				new ShutdownEventArgs(ShutdownInitiator.Application, 200 /* Constants.ReplySuccess*/, "closing appender", null));
 			// using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
-
+			var shutdownEventArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 200 /* Constants.ReplySuccess*/, "closing target", null);
+			ShutdownAmqp(_Connection, shutdownEventArgs);
 			base.CloseTarget();
 		}
 
