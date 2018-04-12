@@ -1,2 +1,2 @@
-# Nlog.RabbitMQ
-Target for popular Nlog logging tool
+# NLog.RabbitMQ
+Target for popular NLog logging tool
