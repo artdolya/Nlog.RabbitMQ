@@ -33,6 +33,8 @@ namespace Nlog.RabbitMQ.Target
 		private readonly Queue<Tuple<byte[], IBasicProperties, string>> _UnsentMessages
 			= new Queue<Tuple<byte[], IBasicProperties, string>>(512);
 
+		private object _sync = new object();
+
 		public RabbitMQTarget()
 		{
 			Layout = "${message}";
@@ -208,10 +210,14 @@ namespace Nlog.RabbitMQ.Target
 			var message = CompressMessage(uncompressedMessage);
 			var routingKey = GetTopic(logEvent);
 
-			if (_Model == null || !_Model.IsOpen)
-				StartConnection(true);
+			var model = _Model;
+			if (model == null || !model.IsOpen)
+			{
+				StartConnection(_Connection, Timeout, true);
+				model = _Model;
+			}
 
-			if (_Model == null || !_Model.IsOpen)
+			if (model == null || !model.IsOpen)
 			{
 				if (!AddUnsent(routingKey, basicProperties, message))
 				{
@@ -220,11 +226,13 @@ namespace Nlog.RabbitMQ.Target
 				return;
 			}
 
+			bool restartConnection = true;
+
 			try
 			{
-				CheckUnsent();
-				Publish(message, basicProperties, routingKey);
-				return;
+				CheckUnsent(model);
+				Publish(model, message, basicProperties, routingKey);
+				restartConnection = false;
 			}
 			catch (IOException e)
 			{
@@ -238,11 +246,19 @@ namespace Nlog.RabbitMQ.Target
 				if (!AddUnsent(routingKey, basicProperties, message))
 					throw;
 			}
-
-			// using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
-			var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
-					"Could not talk to RabbitMQ instance", null);
-			ShutdownAmqp(_Connection, shutdownEvenArgs);
+			catch (Exception e)
+			{
+				restartConnection = false;    // Skip connection reconnect, maybe the LogEvent is broken, or maybe halfway there
+				InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not send to RabbitMQ instance: {1}", Name, e.Message);
+				throw;
+			}
+			finally
+			{
+				if (restartConnection)
+				{
+					StartConnection(_Connection, Math.Min(500, Timeout), true);
+				}
+			}
 		}
 
 		private bool AddUnsent(string routingKey, IBasicProperties basicProperties, byte[] message)
@@ -259,20 +275,20 @@ namespace Nlog.RabbitMQ.Target
 			}
 		}
 
-		private void CheckUnsent()
+		private void CheckUnsent(IModel model)
 		{
 			// using a queue so that removing and publishing is a single operation
 			while (_UnsentMessages.Count > 0)
 			{
 				var tuple = _UnsentMessages.Dequeue();
 				InternalLogger.Info("RabbitMQTarget(Name={0}): Publishing unsent message: {1}.", Name, tuple);
-				Publish(tuple.Item1, tuple.Item2, tuple.Item3);
+				Publish(model, tuple.Item1, tuple.Item2, tuple.Item3);
 			}
 		}
 
-		private void Publish(byte[] bytes, IBasicProperties basicProperties, string routingKey)
+		private void Publish(IModel model, byte[] bytes, IBasicProperties basicProperties, string routingKey)
 		{
-			_Model.BasicPublish(Exchange,
+			model.BasicPublish(Exchange,
 				routingKey,
 				true, basicProperties,
 				bytes);
@@ -307,92 +323,101 @@ namespace Nlog.RabbitMQ.Target
 		protected override void InitializeTarget()
 		{
 			base.InitializeTarget();
-			StartConnection(false);
+			StartConnection(_Connection, Timeout, false);
 		}
 
 		/// <summary>
 		/// Never throws
 		/// </summary>
-		private void StartConnection(bool checkInitialized)
+		private void StartConnection(IConnection oldConnection, int timeoutMilliseconds, bool checkInitialized)
 		{
-			if (_Model != null)
-			{
-				if (_Model.IsOpen)
-					return;
-
-				var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
-						"Model not open to RabbitMQ instance", null);
-				ShutdownAmqp(_Connection, shutdownEvenArgs);
-			}
+			if (!ReferenceEquals(oldConnection, _Connection) && (_Model?.IsOpen ?? false))
+				return;
 
 			var t = Task.Factory.StartNew(() =>
 			{
-				if (checkInitialized && !IsInitialized)
-					return;
-
-				if (_Model != null && _Model.IsOpen)
-					return;
-
-				IModel model = null;
-				IConnection connection = null;
-
-				try
+				// Do not lock on SyncRoot, as we are waiting on this task while holding SyncRoot-lock
+				lock (_sync)
 				{
-					connection = GetConnectionFac().CreateConnection();
-					connection.ConnectionShutdown += (s, e) => ShutdownAmqp(connection, e);
+					if (checkInitialized && !IsInitialized)
+						return;
+
+					if (!ReferenceEquals(oldConnection, _Connection) && (_Model?.IsOpen ?? false))
+						return;
+
+					InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt started...", Name);
+					oldConnection = _Connection ?? oldConnection;
+					if (oldConnection != null)
+					{
+						var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
+	"Model not open to RabbitMQ instance", null);
+						ShutdownAmqp(oldConnection, shutdownEvenArgs);
+					}
+
+					IModel model = null;
+					IConnection connection = null;
 
 					try
 					{
-						model = connection.CreateModel();
-					}
-					catch (Exception e)
-					{
-						InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not create model, {1}", Name, e.Message);
-						var shutdownConnection = connection;
-						connection = null;
-						shutdownConnection.Close(1000);
-						shutdownConnection.Abort(1000);
-					}
+						connection = GetConnectionFac().CreateConnection();
+						connection.ConnectionShutdown += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e);
 
-					if (model != null && !Passive)
-					{
 						try
 						{
-							model.ExchangeDeclare(Exchange, ExchangeType, Durable);
+							model = connection.CreateModel();
 						}
 						catch (Exception e)
 						{
-							InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not declare exchange: {1}", Name, e.Message));
 							var shutdownConnection = connection;
 							connection = null;
-							model.Dispose();
-							model = null;
+							InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not create model, {1}", Name, e.Message);
 							shutdownConnection.Close(1000);
 							shutdownConnection.Abort(1000);
 						}
-					}
-				}
-				catch (Exception e)
-				{
-					InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not connect to Rabbit instance: {1}", Name, e.Message));
-				}
-				finally
-				{
-					if (connection != null && model != null)
-					{
-						lock (SyncRoot)
+
+						if (model != null && !Passive)
 						{
-							if (_Model == null || !_Model.IsOpen)
+							try
+							{
+								model.ExchangeDeclare(Exchange, ExchangeType, Durable);
+							}
+							catch (Exception e)
+							{
+								var shutdownConnection = connection;
+								connection = null;
+								InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not declare exchange: {1}", Name, e.Message));
+								model.Dispose();
+								model = null;
+								shutdownConnection.Close(1000);
+								shutdownConnection.Abort(1000);
+							}
+						}
+					}
+					catch (Exception e)
+					{
+						connection = null;
+						InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not connect to Rabbit instance: {1}", Name, e.Message));
+					}
+					finally
+					{
+						if (connection != null && model != null)
+						{
+							if ((_Model?.IsOpen ?? false))
+							{
+								InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt completed succesfully, but not needed", Name);
+							}
+							else
 							{
 								_Connection = connection;
 								_Model = model;
+								InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt completed succesfully", Name);
 							}
 						}
 					}
 				}
 			});
 
-			if (!t.Wait(TimeSpan.FromMilliseconds(Timeout)))
+			if (!t.Wait(TimeSpan.FromMilliseconds(timeoutMilliseconds)))
 				InternalLogger.Warn("RabbitMQTarget(Name={0}): Starting connection-task timed out, continuing", Name);
 		}
 
@@ -429,22 +454,25 @@ namespace Nlog.RabbitMQ.Target
 				InternalLogger.Info("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
 			}
 
-			lock (SyncRoot)
+			lock (_sync)
 			{
-				if (connection != null && ReferenceEquals(connection, _Connection))
+				if (connection != null)
 				{
-					var model = _Model;
+					IModel model = null;
 
-					_Connection = null;
-					_Model = null;
+					if (ReferenceEquals(connection, _Connection))
+					{
+						model = _Model;
+						_Connection = null;
+						_Model = null;
+					}
 
 					try
 					{
-						if (model != null && model.IsOpen
-							&& reason.ReplyCode != 504 //Constants.ChannelError
-							&& reason.ReplyCode != 320 //Constants.ConnectionForced
-						)
-							model.Abort(); //model.Close();
+						if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
+							model?.Close();
+						else
+							model?.Abort(); // Abort is close without throwing Exceptions
 					}
 					catch (Exception e)
 					{
@@ -453,11 +481,11 @@ namespace Nlog.RabbitMQ.Target
 
 					try
 					{
-						if (connection.IsOpen)
-						{
-							connection.Close(reason.ReplyCode, reason.ReplyText, 1000);
-							connection.Abort(1000); // you get 2 seconds to shut down!
-						}
+						// you get 1.5 seconds to shut down!
+						if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
+							connection.Close(reason.ReplyCode, reason.ReplyText, 1500); 
+						else
+							connection.Abort(reason.ReplyCode, reason.ReplyText, 1500);
 					}
 					catch (Exception e)
 					{
