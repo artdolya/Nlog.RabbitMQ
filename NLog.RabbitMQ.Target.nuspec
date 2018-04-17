@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>NLog.RabbitMQ.Target</id>
+        <version>2.5.2</version>
+        <title>NLog RabbitMQ</title>
+        <authors>NLog.RabbitMQ.Target</authors>
+        <owners>adolya</owners>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<projectUrl>https://github.com/adolya/Nlog.RabbitMQ</projectUrl>
+		<description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ</description>
+		<releaseNotes>Updated to NLog 4.5 RTM</releaseNotes>
+		<tags>NLog RabbitMQ logging log</tags>
+		<repository type="git" url="git://github.com/adolya/Nlog.RabbitMQ" />
+		<dependencies>
+		  <group targetFramework=".NETFramework4.5.1">
+			<dependency id="NLog" version="4.5.0" exclude="Build,Analyzers" />
+			<dependency id="Newtonsoft.Json" version="10.0.3" exclude="Build,Analyzers" />
+			<dependency id="RabbitMQ.Client" version="5.0.1" exclude="Build,Analyzers" />
+		  </group>
+		  <group targetFramework=".NETStandard1.5">
+			<dependency id="NETStandard.Library" version="1.6.1" exclude="Build,Analyzers" />
+			<dependency id="NLog" version="4.5.0" exclude="Build,Analyzers" />
+			<dependency id="Newtonsoft.Json" version="10.0.3" exclude="Build,Analyzers" />
+			<dependency id="RabbitMQ.Client" version="5.0.1" exclude="Build,Analyzers" />
+		  </group>
+		</dependencies>
+    </metadata>
+    <files>
+       <file src="src\Nlog.RabbitMQ.Target\bin\Release\**\*.*" target="lib"/>
+    </files>
+</package>
