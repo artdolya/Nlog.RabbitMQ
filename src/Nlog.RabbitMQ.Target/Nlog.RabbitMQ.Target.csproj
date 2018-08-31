@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>2.5.1</Version>
+    <Version>2.5.5</Version>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
 
-    <Title>Nlog.Targets.RabbitMQ</Title>
+    <Title>Nlog.RabbitMQ.Target</Title>
     <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ </Description>
-    <Product>Nlog.Targets.RabbitMQ</Product>
     <Authors>Henrik Feldt</Authors>
     <PackageReleaseNotes>
       Updated to NLog 4.5 RTM
@@ -16,7 +15,6 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/adolya/Nlog.RabbitMQ</RepositoryUrl>
 
-    <AssemblyName>Nlog.RabbitMQ.Target</AssemblyName>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
   </PropertyGroup>
 
