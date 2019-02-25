@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Version>2.5.5</Version>
-    <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
+    <TargetFrameworks>net47;netstandard1.5</TargetFrameworks>
 
     <Title>Nlog.RabbitMQ.Target</Title>
     <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ </Description>
