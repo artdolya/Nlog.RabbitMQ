@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>2.5.5</Version>
+    <VersionPrefix>2.6.1</VersionPrefix>
     <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
 
     <Title>Nlog.RabbitMQ</Title>
@@ -10,7 +10,7 @@
     <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ </Description>
     <Authors>Artem Dolya;Henrik Feldt</Authors>
     <PackageReleaseNotes>
-      Updated to NLog 4.5 RTM
+      Upgraded to .NET 4.7 RTM
     </PackageReleaseNotes>
     <PackageTags>NLog;RabbitMQ;logging;log</PackageTags>
     <PackageProjectUrl>https://github.com/adolya/Nlog.RabbitMQ</PackageProjectUrl>
