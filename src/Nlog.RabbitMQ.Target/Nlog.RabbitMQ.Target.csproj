@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>2.5.5</Version>
+    <VersionPrefix>2.6</VersionPrefix>
     <TargetFrameworks>net47;netstandard1.5</TargetFrameworks>
 
     <Title>Nlog.RabbitMQ.Target</Title>
