@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>2.6.1</VersionPrefix>
-    <TargetFrameworks>net451;netstandard1.5</TargetFrameworks>
+    <VersionPrefix>2.7.0</VersionPrefix>
+    <TargetFrameworks>net452;netstandard1.6.1</TargetFrameworks>
 
     <Title>Nlog.RabbitMQ</Title>
     <PackageId>Nlog.RabbitMQ.Target</PackageId>
@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="NLog" Version="4.5.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.0.0-rc1" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 

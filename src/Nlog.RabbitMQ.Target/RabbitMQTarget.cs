@@ -205,7 +205,6 @@ namespace Nlog.RabbitMQ.Target
 
 		protected override void Write(LogEventInfo logEvent)
 		{
-			var basicProperties = GetBasicProperties(logEvent);
 			var uncompressedMessage = GetMessage(logEvent);
 			var message = CompressMessage(uncompressedMessage);
 			var routingKey = GetTopic(logEvent);
@@ -216,6 +215,8 @@ namespace Nlog.RabbitMQ.Target
 				StartConnection(_Connection, Timeout, true);
 				model = _Model;
 			}
+			
+			var basicProperties = GetBasicProperties(logEvent, model);
 
 			if (model == null || !model.IsOpen)
 			{
@@ -307,17 +308,16 @@ namespace Nlog.RabbitMQ.Target
 			return _Encoding.GetBytes(msg);
 		}
 
-		private IBasicProperties GetBasicProperties(LogEventInfo @event)
+		private IBasicProperties GetBasicProperties(LogEventInfo @event, IModel model)
 		{
-			return new BasicProperties
-			{
-				ContentEncoding = "utf8",
-				ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain",
-				AppId = AppId ?? @event.LoggerName,
-				Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event)),
-				UserId = UserName, // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
-				DeliveryMode = (byte)DeliveryMode
-			};
+			IBasicProperties basicProperties = model.CreateBasicProperties();
+			basicProperties.ContentEncoding = "utf8";
+			basicProperties.ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain";
+			basicProperties.AppId = AppId ?? @event.LoggerName;
+			basicProperties.Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event));
+			basicProperties.UserId = UserName;
+			basicProperties.DeliveryMode = (byte)DeliveryMode;
+			return basicProperties;
 		}
 
 		protected override void InitializeTarget()
