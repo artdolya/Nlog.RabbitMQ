@@ -11,7 +11,7 @@ RabbitMQ Target for popular NLog logging tool
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <extensions>
-    <add assembly="NLog.Targets.RabbitMQ" />
+    <add assembly="Nlog.RabbitMQ.Target" />
   </extensions>
 
   <targets async="true">
@@ -38,7 +38,7 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<extensions>
-		<add assembly="NLog.Targets.RabbitMQ" />
+		<add assembly="Nlog.RabbitMQ.Target" />
 	</extensions>
 
 	<targets>
