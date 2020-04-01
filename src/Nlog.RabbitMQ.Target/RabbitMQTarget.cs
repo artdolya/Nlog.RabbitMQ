@@ -43,25 +43,24 @@ namespace Nlog.RabbitMQ.Target
 		}
 
 		#region Properties
-
 		/// <summary>
 		/// 	Gets or sets the virtual host to publish to.
 		/// </summary>
-		public string VHost { get; set; } = "/";
+		public Layout VHost { get; set; } = "/";
 
 		/// <summary>
 		/// 	Gets or sets the username to use for
 		/// 	authentication with the message broker. The default
 		/// 	is 'guest'
 		/// </summary>
-		public string UserName { get; set; } = "guest";
+		public Layout UserName { get; set; } = "guest";
 
 		/// <summary>
 		/// 	Gets or sets the password to use for
 		/// 	authentication with the message broker.
 		/// 	The default is 'guest'
 		/// </summary>
-		public string Password { get; set; } = "guest";
+		public Layout Password { get; set; } = "guest";
 
 		/// <summary>
 		/// 	Gets or sets the port to use
@@ -69,7 +68,7 @@ namespace Nlog.RabbitMQ.Target
 		/// 	listening port).
 		/// 	The default is '5672'.
 		/// </summary>
-		public ushort Port { get; set; } = 5672;
+		public Layout Port { get; set; } = "5672";
 
 		///<summary>
 		///	Gets or sets the routing key (aka. topic) with which
@@ -92,15 +91,15 @@ namespace Nlog.RabbitMQ.Target
 		/// <remarks>
 		/// 	Default is 'localhost'
 		/// </remarks>
-		public string HostName { get; set; } = "localhost";
+		public Layout HostName { get; set; }
 
-		/// <summary>
+        /// <summary>
 		/// 	Gets or sets the exchange to bind the logger output to.
 		/// </summary>
 		/// <remarks>
 		/// 	Default is 'app-logging'
 		/// </remarks>
-		public string Exchange { get; set; } = "app-logging";
+		public Layout Exchange { get; set; } = "app-logging";
 
 		/// <summary>
 		///   Gets or sets the exchange type to bind the logger output to.
@@ -168,12 +167,12 @@ namespace Nlog.RabbitMQ.Target
 		/// <summary>
 		/// Location of client SSL certificate
 		/// </summary>
-		public string SslCertPath { get; set; }
+		public Layout SslCertPath { get; set; }
 
 		/// <summary>
 		/// Passphrase for generated SSL certificate defined in SslCertPath
 		/// </summary>
-		public string SslCertPassphrase { get; set; }
+		public Layout SslCertPassphrase { get; set; }
 
 		/// <summary>
 		/// The delivery more, 1 for non-persistent, 2 for persistent
@@ -287,8 +286,10 @@ namespace Nlog.RabbitMQ.Target
 		}
 
 		private void Publish(IModel model, byte[] bytes, IBasicProperties basicProperties, string routingKey)
-		{
-			model.BasicPublish(Exchange,
+        {
+            var exchange = Exchange.Render(LogEventInfo.CreateNullEvent());
+
+			model.BasicPublish(exchange,
 				routingKey,
 				true, basicProperties,
 				bytes);
@@ -308,14 +309,15 @@ namespace Nlog.RabbitMQ.Target
 		}
 
 		private IBasicProperties GetBasicProperties(LogEventInfo @event)
-		{
+        {
+            var userName = UserName.Render(@event);
 			return new BasicProperties
 			{
 				ContentEncoding = "utf8",
 				ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain",
 				AppId = AppId ?? @event.LoggerName,
 				Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event)),
-				UserId = UserName, // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
+				UserId = userName, // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
 				DeliveryMode = (byte)DeliveryMode
 			};
 		}
@@ -350,7 +352,7 @@ namespace Nlog.RabbitMQ.Target
 					if (oldConnection != null)
 					{
 						var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
-	"Model not open to RabbitMQ instance", null);
+	            "Model not open to RabbitMQ instance", null);
 						ShutdownAmqp(oldConnection, shutdownEvenArgs);
 					}
 
@@ -379,7 +381,8 @@ namespace Nlog.RabbitMQ.Target
 						{
 							try
 							{
-								model.ExchangeDeclare(Exchange, ExchangeType, Durable);
+                                var exchange = Exchange.Render(LogEventInfo.CreateNullEvent());
+								model.ExchangeDeclare(exchange, ExchangeType, Durable);
 							}
 							catch (Exception e)
 							{
@@ -422,21 +425,30 @@ namespace Nlog.RabbitMQ.Target
 		}
 
 		private ConnectionFactory GetConnectionFac()
-		{
+        {
+            var nullEvent = LogEventInfo.CreateNullEvent();
+            var hostName = HostName?.Render(nullEvent);
+            var vHost = VHost?.Render(nullEvent);
+            var userName = UserName?.Render(nullEvent);
+            var password = Password?.Render(nullEvent);
+            var port = int.Parse(Port.Render(nullEvent));
+            var sslCertPath = SslCertPath?.Render(nullEvent);
+            var sslCertPassphrase = SslCertPassphrase?.Render(nullEvent);
+
 			return new ConnectionFactory
 			{
-				HostName = HostName,
-				VirtualHost = VHost,
-				UserName = UserName,
-				Password = Password,
+				HostName = hostName,
+				VirtualHost = vHost,
+				UserName = userName,
+				Password = password,
 				RequestedHeartbeat = HeartBeatSeconds,
-				Port = Port,
+				Port = port,
 				Ssl = new SslOption()
 				{
 					Enabled = UseSsl,
-					CertPath = SslCertPath,
-					CertPassphrase = SslCertPassphrase,
-					ServerName = HostName
+					CertPath = sslCertPath,
+					CertPassphrase = sslCertPassphrase,
+					ServerName = hostName
 				}
 			};
 		}
