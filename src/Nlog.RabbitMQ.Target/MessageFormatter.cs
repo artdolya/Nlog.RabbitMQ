@@ -69,7 +69,11 @@ namespace Nlog.RabbitMQ.Target
 
 			logLine.EnsureADT();
 
-			return JsonConvert.SerializeObject(logLine);
+			return JsonConvert.SerializeObject(logLine,
+                new JsonSerializerSettings
+                {
+					ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                });
 		}
 
 		public static long GetEpochTimeStamp(LogEventInfo @event)

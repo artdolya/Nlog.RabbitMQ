@@ -3,73 +3,71 @@
 [![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
 
 Forked from https://github.com/adolya/Nlog.RabbitMQ
+
 Changed most of target parameters to be formatted using `Layout.Render(...)`
 RabbitMQ Target for popular NLog logging tool
 
 ## Changes for ASPNET.CORE
 
-The following configuration now works.
-Config setting names are merely examples.
+The following configuration is now supported:
 
 ```xml
-    ...
-		<!--  Notification Service -->
-		<target name="NameOfThisTarget"
-		        xsi:type="RabbitMQ"
-		        username="${configsetting:name=<String>:default=<Default Value>}"
-		        password="${configsetting:name=<String>:default=<Default Value>}"
-		        hostname="${configsetting:name=<String>:default=<Default Value>}"
-		        port="${configsetting:name=<String>:default=<Default Value>}"
-		        port="${configsetting:name=<String>:default=<Default Value>}"
-		        exchange="${configsetting:name=<String>:default=<Default Value>}"
-		        heartBeatSeconds="30"
-		        UseJSON="true"
-		        layout="${message}"
-		        DeliveryMode="NonPersistent">
-			<field key="machineName" name="MachineName" layout="${machinename}"/>
-			<field key="url" name="url" layout="${aspnet-request-url}" />
-			<field key="callStack" name="callStack" layout="${stacktrace:separator=&#13;&#10;}" />
-		</target>
-    ...
+  ...
+  <!--  Notification Service -->
+  <target name="NameOfThisTarget"
+      xsi:type="RabbitMQ"
+      username="${configsetting:name=<String>:default=<Default Value>}"
+      password="${configsetting:name=<String>:default=<Default Value>}"
+      hostname="${configsetting:name=<String>:default=<Default Value>}"
+      port="${configsetting:name=<String>:default=<Default Value>}"
+      port="${configsetting:name=<String>:default=<Default Value>}"
+      exchange="${configsetting:name=<String>:default=<Default Value>}"
+      heartBeatSeconds="30"
+      UseJSON="true"
+      layout="${message}"
+      DeliveryMode="NonPersistent">
+    <field key="machineName" name="MachineName" layout="${machinename}"/>
+    <field key="url" name="url" layout="${aspnet-request-url}" />
+    <field key="callStack" name="callStack" layout="${stacktrace:separator=&#13;&#10;}" />
+  </target>
+  ...
 ```
 
 Given the following config file `appsettings.<Env>.json`, in the environment `Env`:
 
 ```json
-{
-	"Application": {
-		"RabbitMQ": {
-			"Host": "rabbitmq-server",
-			"Port": "5672",
-			"Username": "rabbitmquser",
-			"Password": "password",
-      "Vhost": "/",
-			"Exchange": "test.exchange",
-		}
-	}
+"Application": {
+  "RabbitMQ": {
+    "Host": "rabbitmq-server",
+    "Port": "5672",
+    "Username": "rabbitmquser",
+    "Password": "password",
+    "Vhost": "/",
+    "Exchange": "test.exchange",
+  }
 }
 ```
 
 The following should be in your `NLog.config` file:
 
 ```xml
-		<!--  Notification Service -->
-		<target name="NameOfThisTarget"
-		        xsi:type="RabbitMQ"
-		        username="${configsetting:name=Application.RabbitMQ.Username}"
-		        password="${configsetting:name=Application.RabbitMQ.Password}"
-		        hostname="${configsetting:name=Application.RabbitMQ.Host}"
-		        port="${configsetting:name=Application.RabbitMQ.Port}"
-		        vhost="${configsetting:name=Application.RabbitMQ.Vhost}"
-		        exchange="${configsetting:name=Application.RabbitMQ.Exchange}"
-		        heartBeatSeconds="30"
-		        UseJSON="true"
-		        layout="${message}"
-		        DeliveryMode="NonPersistent">
-			<field key="machineName" name="MachineName" layout="${machinename}"/>
-			<field key="url" name="url" layout="${aspnet-request-url}" />
-			<field key="callStack" name="callStack" layout="${stacktrace:separator=&#13;&#10;}" />
-		</target>
+<!--  Notification Service -->
+<target name="NameOfThisTarget"
+    xsi:type="RabbitMQ"
+    username="${configsetting:name=Application.RabbitMQ.Username}"
+    password="${configsetting:name=Application.RabbitMQ.Password}"
+    hostname="${configsetting:name=Application.RabbitMQ.Host}"
+    port="${configsetting:name=Application.RabbitMQ.Port}"
+    vhost="${configsetting:name=Application.RabbitMQ.Vhost}"
+    exchange="${configsetting:name=Application.RabbitMQ.Exchange}"
+    heartBeatSeconds="30"
+    UseJSON="true"
+    layout="${message}"
+    DeliveryMode="NonPersistent">
+  <field key="machineName" name="MachineName" layout="${machinename}"/>
+  <field key="url" name="url" layout="${aspnet-request-url}" />
+  <field key="callStack" name="callStack" layout="${stacktrace:separator=&#13;&#10;}" />
+</target>
 ```
 
 ## Minimum Recommended Configuration
