@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NLog.Extensions.RabbitMQ</id>
-    <version>2.7.6</version>
+    <version>2.7.7</version>
     <title>NLog.RabbitMQ.Target fork by konstan</title>
     <authors>Andre Konstantinov</authors>
     <owners>Andre Konstantinov</owners>
