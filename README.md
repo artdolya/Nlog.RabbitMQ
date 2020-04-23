@@ -1,11 +1,14 @@
 # Nlog.RabbitMQ.Target
 
+RabbitMQ Target for popular NLog logging tool
+
 [![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
 
 Forked from https://github.com/adolya/Nlog.RabbitMQ
 
 Changed most of target parameters to be formatted using `Layout.Render(...)`
-RabbitMQ Target for popular NLog logging tool
+
+Renamed to a different package ID in order to be able to publish a nuget.
 
 ## Changes for ASPNET.CORE
 
@@ -33,7 +36,7 @@ The following configuration is now supported:
   ...
 ```
 
-Given the following config file `appsettings.<Env>.json`, in the environment `Env`:
+Given the following config file `appsettings.Env.json`, in the environment `Env`:
 
 ```json
 "Application": {
@@ -159,46 +162,3 @@ Because NLog doesn't expose a single method for shutting everything down (but lo
 ```csharp
 LogManager.Shutdown();
 ```
-
-## Value-Add - How to use with LogStash?
-
-Make sure you are using the flag `useJSON='true'` in your configuration, then you [download logstash](http://logstash.net/)! Place it in a folder, and add a file that you call 'logstash.conf' next to it:
-
-```
-input {
-  amqp {
-    durable => true
-    exchange => "app-logging"
-    exclusive => false
-    format => "json_event"
-    host => "localhost"
-    key => "#"
-    name => ""
-    passive => false
-    password => "guest"
-    port => 5672
-    prefetch_count => 10
-    ssl => false
-    # tags => ... # array (optional)
-    type => "nlog"
-    user => "guest"
-    verify_ssl => false
-    vhost => "/"
-  }
-}
-
-output {
-  # Emit events to stdout for easy debugging of what is going through
-  # logstash.
-  stdout { }
-
-  # This will use elasticsearch to store your logs.
-  # The 'embedded' option will cause logstash to run the elasticsearch
-  # server in the same process, so you don't have to worry about
-  # how to download, configure, or run elasticsearch!
-  elasticsearch { embedded => true }
-}
-```
-
-You then start the monolithic logstash: `java -jar logstash-1.1.0-monolithic.jar agent -f logstash.conf -- web`.
-Now you can surf to http://127.0.0.1:9292 and search your logs that you're generating

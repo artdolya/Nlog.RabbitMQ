@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<package >
+  <metadata>
+    <id>NLog.Extensions.RabbitMQ</id>
+    <version>2.7.6</version>
+    <title>NLog.RabbitMQ.Target fork by konstan</title>
+    <authors>Andre Konstantinov</authors>
+    <owners>Andre Konstantinov</owners>
+    <description>
+      NLog.RabbitMQ.Target fork by konstan
+      Allows to use ${configsettings} for most properties
+      when defining the RabbitMQ target.
+    </description>
+    <copyright>Copyright 2020</copyright>
+    <license type="file">license.txt</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/abkonsta/NLog.Extensions.RabbitMQ</projectUrl>
+    <dependencies>
+      <group targetFramework="net46">
+        <dependency id="NLog" version="4.*" />
+        <dependency id="Newtonsoft.Json" version="12.0.1" />
+        <dependency id="RabbitMQ.Client" version="5.*" />
+      </group>
+      <group targetFramework="netstandard2.0">
+        <dependency id="NLog" version="4.*" />
+        <dependency id="Newtonsoft.Json" version="12.0.1" />
+        <dependency id="RabbitMQ.Client" version="5.*" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Core" targetFramework="net46" />
+      <frameworkAssembly assemblyName="System.Core" targetFramework="netstandard2.0" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="bin\Release\netstandard2.0\Nlog.Extensions.RabbitMQ.dll" target="lib\netstandard2.0\Nlog.Extensions.RabbitMQ.dll" />
+    <file src="bin\Release\net46\Nlog.Extensions.RabbitMQ.dll" target="lib\net46\Nlog.Extensions.RabbitMQ.dll" />
+    <file src="license.txt" target="" />
+  </files>
+</package>

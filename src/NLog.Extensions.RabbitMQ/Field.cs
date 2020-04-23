@@ -1,7 +1,7 @@
 ﻿using NLog.Config;
 using NLog.Layouts;
 
-namespace Nlog.RabbitMQ.Target
+namespace NLog.Extensions.RabbitMQ
 {
 	[NLogConfigurationItem]
 	[ThreadAgnostic]

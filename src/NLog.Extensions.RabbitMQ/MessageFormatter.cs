@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using NLog;
 using NLog.Layouts;
 
-namespace Nlog.RabbitMQ.Target
+namespace NLog.Extensions.RabbitMQ
 {
 	public static class MessageFormatter
 	{

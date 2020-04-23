@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <VersionPrefix>2.7.1</VersionPrefix>
+    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+    <Title>NLog.Extensions.RabbitMQ</Title>
+    <PackageId>NLog.Extensions.RabbitMQ</PackageId>
+    <Company>konstan</Company>
+    <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/adolya/NLog.RabbitMQ</Description>
+    <Authors>Artem Dolya;Henrik Feldt; Andre Konstantinov</Authors>
+    <PackageReleaseNotes>Updated to latest NETFramework and NETStandard</PackageReleaseNotes>
+    <PackageTags>NLog;RabbitMQ;logging;log</PackageTags>
+    <PackageProjectUrl>https://github.com/abkonsta/Nlog.RabbitMQ</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>git://github.com/abkonsta/Nlog.RabbitMQ</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NLog" Version="4.7.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="5.1.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+</Project>
