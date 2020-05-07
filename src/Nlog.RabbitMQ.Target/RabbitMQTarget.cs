@@ -10,7 +10,6 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Framing;
 
 namespace Nlog.RabbitMQ.Target
 {
@@ -205,7 +204,6 @@ namespace Nlog.RabbitMQ.Target
 
 		protected override void Write(LogEventInfo logEvent)
 		{
-			var basicProperties = GetBasicProperties(logEvent);
 			var uncompressedMessage = GetMessage(logEvent);
 			var message = CompressMessage(uncompressedMessage);
 			var routingKey = GetTopic(logEvent);
@@ -216,6 +214,8 @@ namespace Nlog.RabbitMQ.Target
 				StartConnection(_Connection, Timeout, true);
 				model = _Model;
 			}
+
+			var basicProperties = GetBasicProperties(logEvent, model);
 
 			if (model == null || !model.IsOpen)
 			{
@@ -307,17 +307,16 @@ namespace Nlog.RabbitMQ.Target
 			return _Encoding.GetBytes(msg);
 		}
 
-		private IBasicProperties GetBasicProperties(LogEventInfo @event)
+		private IBasicProperties GetBasicProperties(LogEventInfo @event, IModel model)
 		{
-			return new BasicProperties
-			{
-				ContentEncoding = "utf8",
-				ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain",
-				AppId = AppId ?? @event.LoggerName,
-				Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event)),
-				UserId = UserName, // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
-				DeliveryMode = (byte)DeliveryMode
-			};
+			var basicProperties = model.CreateBasicProperties();
+			basicProperties.ContentEncoding = "utf8";
+			basicProperties.ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain";
+			basicProperties.AppId = AppId ?? @event.LoggerName;
+			basicProperties.Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(@event));
+			basicProperties.UserId = UserName; // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
+			basicProperties.DeliveryMode = (byte) DeliveryMode;
+			return basicProperties;
 		}
 
 		protected override void InitializeTarget()
@@ -371,8 +370,8 @@ namespace Nlog.RabbitMQ.Target
 							var shutdownConnection = connection;
 							connection = null;
 							InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not create model, {1}", Name, e.Message);
-							shutdownConnection.Close(1000);
-							shutdownConnection.Abort(1000);
+							shutdownConnection.Close(TimeSpan.FromMilliseconds(1000));
+							shutdownConnection.Abort(TimeSpan.FromMilliseconds(1000));
 						}
 
 						if (model != null && !Passive)
@@ -388,8 +387,8 @@ namespace Nlog.RabbitMQ.Target
 								InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not declare exchange: {1}", Name, e.Message));
 								model.Dispose();
 								model = null;
-								shutdownConnection.Close(1000);
-								shutdownConnection.Abort(1000);
+								shutdownConnection.Close(TimeSpan.FromMilliseconds(1000));
+								shutdownConnection.Abort(TimeSpan.FromMilliseconds(1000));
 							}
 						}
 					}
@@ -429,7 +428,7 @@ namespace Nlog.RabbitMQ.Target
 				VirtualHost = VHost,
 				UserName = UserName,
 				Password = Password,
-				RequestedHeartbeat = HeartBeatSeconds,
+				RequestedHeartbeat = TimeSpan.FromSeconds(HeartBeatSeconds),
 				Port = Port,
 				Ssl = new SslOption()
 				{
@@ -483,9 +482,9 @@ namespace Nlog.RabbitMQ.Target
 					{
 						// you get 1.5 seconds to shut down!
 						if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
-							connection.Close(reason.ReplyCode, reason.ReplyText, 1500); 
+							connection.Close(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500)); 
 						else
-							connection.Abort(reason.ReplyCode, reason.ReplyText, 1500);
+							connection.Abort(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
 					}
 					catch (Exception e)
 					{
