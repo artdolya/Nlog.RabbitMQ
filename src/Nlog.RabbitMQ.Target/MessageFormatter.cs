@@ -1,80 +1,93 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Net;
 using Newtonsoft.Json;
 using NLog;
-using NLog.Layouts;
 
 namespace Nlog.RabbitMQ.Target
 {
-	public static class MessageFormatter
-	{
-		private static readonly DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+    public static class MessageFormatter
+    {
+        private static readonly DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+        private static readonly IDictionary<string, object> EmptyDictionary = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
+        private static readonly ICollection<string> EmptyHashSet = Array.Empty<string>();
 
-		static string _hostName;
-		private static string HostName
-		{
-			get { return _hostName = (_hostName ?? Dns.GetHostName()); }
-		}
+        public static string GetMessageInner(JsonSerializer jsonSerializer, string mesage, string messageSource, LogEventInfo logEvent, IList<Field> fields)
+        {
+            var logLine = new LogLine
+            {
+                TimeStampISO8601 = logEvent.TimeStamp.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
+                Message = mesage,
+                Level = logEvent.Level.Name,
+                Type = "amqp",
+                Source = messageSource,
+            };
 
-		public static string GetMessageInner(bool useJSON, Layout layout, LogEventInfo info, IList<Field> fields)
-		{
-			return GetMessageInner(useJSON, false, layout, info, fields);
-		}
-
-		public static string GetMessageInner(bool useJSON, bool useLayoutAsMessage, Layout layout, LogEventInfo logEvent, IList<Field> fields)
-		{
-			if (!useJSON)
-				return layout.Render(logEvent);
-
-			var logLine = new LogLine
-			{
-				TimeStampISO8601 = logEvent.TimeStamp.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
-				Message = useLayoutAsMessage ? layout.Render(logEvent) : logEvent.FormattedMessage,
-				Level = logEvent.Level.Name,
-				Type = "amqp",
-				Source = new Uri(string.Format("nlog://{0}/{1}", HostName, logEvent.LoggerName))
-			};
-
-			logLine.AddField("exception", logEvent.Exception);
+            logLine.AddField("exception", logEvent.Exception);
 
             if (logEvent.HasProperties)
             {
-                if (logEvent.Properties.ContainsKey("fields"))
-                {
-                    foreach (var kv in (IEnumerable<KeyValuePair<string, object>>)logEvent.Properties["fields"])
-                        logLine.AddField(kv.Key, kv.Value);
-                }
-
-                if (logEvent.Properties.ContainsKey("tags"))
-                {
-                    foreach (var tag in (IEnumerable<string>)logEvent.Properties["tags"])
-                        logLine.AddTag(tag);
-                }
-
                 foreach (var propertyPair in logEvent.Properties)
                 {
                     var key = propertyPair.Key as string;
-                    if (key == null || key == "tags" || key == "fields")
+                    if (string.IsNullOrEmpty(key))
                         continue;
+
+                    if (key == "tags" && propertyPair.Value is IEnumerable<string> tags)
+                    {
+                        foreach (var tag in tags)
+                            logLine.AddTag(tag);
+                    }
+                    else if (key == "fields" && propertyPair.Value is IEnumerable<KeyValuePair<string, object>> bonusFields)
+                    {
+                        foreach (var kv in bonusFields)
+                            logLine.AddField(kv.Key, kv.Value);
+                    }
 
                     logLine.AddField(key, propertyPair.Value);
                 }
             }
 
-			if (fields != null)
-				foreach (Field field in fields)
-					logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
+            if (fields?.Count > 0)
+            {
+                foreach (Field field in fields)
+                    logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
+            }
 
-			logLine.EnsureADT();
+            if (logLine.Fields == null)
+                logLine.Fields = EmptyDictionary;
 
-			return JsonConvert.SerializeObject(logLine);
-		}
+            if (logLine.Tags == null)
+                logLine.Tags = EmptyHashSet;
 
-		public static long GetEpochTimeStamp(LogEventInfo @event)
-		{
-			return Convert.ToInt64((@event.TimeStamp - _epoch).TotalSeconds);
-		}
-	}
+            var sb = new System.Text.StringBuilder(256);
+            var sw = new System.IO.StringWriter(sb, CultureInfo.InvariantCulture);
+            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
+            {
+                jsonWriter.Formatting = jsonSerializer.Formatting;
+                jsonSerializer.Serialize(jsonWriter, logLine, typeof(LogLine));
+            }
+            return sb.ToString();
+        }
+
+        public static JsonSerializerSettings CreateJsonSerializerSettings()
+        {
+            var jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
+            jsonSerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.MemberInfo)));
+            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Assembly)));
+            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Module)));
+            jsonSerializerSettings.Error = (sender, args) =>
+            {
+                args.ErrorContext.Handled = true;
+            };
+            return jsonSerializerSettings;
+        }
+
+        public static long GetEpochTimeStamp(LogEventInfo @event)
+        {
+            return Convert.ToInt64((@event.TimeStamp - _epoch).TotalSeconds);
+        }
+    }
 }
