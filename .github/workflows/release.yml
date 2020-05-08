@@ -19,5 +19,4 @@ jobs:
       run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }}
       working-directory: ./src/Nlog.RabbitMQ.Target
     - name: Publish Nuget Package
-      if: succeeded()
       run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json --no-symbols true
