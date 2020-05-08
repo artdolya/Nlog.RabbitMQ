@@ -1,0 +1,23 @@
+name: Release to Nuget
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Create NuGet Package
+      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }}
+      working-directory: ./src/Nlog.RabbitMQ.Target
+    - name: Publish Nuget Package
+      if: succeeded()
+      run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json --no-symbols true
