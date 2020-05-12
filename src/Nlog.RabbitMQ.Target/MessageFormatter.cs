@@ -18,12 +18,12 @@ namespace Nlog.RabbitMQ.Target
 			get { return _hostName = (_hostName ?? Dns.GetHostName()); }
 		}
 
-		public static string GetMessageInner(bool useJSON, Layout layout, LogEventInfo info, IList<Field> fields)
-		{
-			return GetMessageInner(useJSON, false, layout, info, fields);
-		}
+        public static string GetMessageInner(bool useJSON, bool addGdc, bool addNdlc, bool addMdlc, Layout layout, LogEventInfo info, IList<Field> fields)
+        {
+            return GetMessageInner(useJSON, false, addGdc, addNdlc, addMdlc, layout, info, fields);
+        }
 
-		public static string GetMessageInner(bool useJSON, bool useLayoutAsMessage, Layout layout, LogEventInfo logEvent, IList<Field> fields)
+        public static string GetMessageInner(bool useJSON,bool useLayoutAsMessage, bool addGdc, bool addNdlc, bool addMdlc, Layout layout, LogEventInfo logEvent, IList<Field> fields)
 		{
 			if (!useJSON)
 				return layout.Render(logEvent);
@@ -61,9 +61,33 @@ namespace Nlog.RabbitMQ.Target
 
                     logLine.AddField(key, propertyPair.Value);
                 }
+			}
+
+            if (addGdc)
+            {
+                foreach (var gdc in GlobalDiagnosticsContext.GetNames())
+                {
+                    logLine.AddField(gdc, GlobalDiagnosticsContext.GetObject(gdc));
+                }
             }
 
-			if (fields != null)
+            if (addNdlc)
+            {
+                foreach (var ndlc in NestedDiagnosticsLogicalContext.GetAllObjects())
+                {
+                    logLine.AddField("nested", ndlc);
+                }
+            }
+
+            if (addMdlc)
+            {
+                foreach (var mdlc in MappedDiagnosticsLogicalContext.GetNames())
+                {
+                    logLine.AddField(mdlc, MappedDiagnosticsLogicalContext.GetObject(mdlc));
+                }
+            }
+
+            if (fields != null)
 				foreach (Field field in fields)
 					logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
 
