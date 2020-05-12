@@ -175,6 +175,20 @@ namespace Nlog.RabbitMQ.Target
 		public ushort HeartBeatSeconds { get; set; } = 3;
 
 		/// <summary>
+		/// Add Global Diagnostic Context fields (https://github.com/NLog/NLog/wiki/Gdc-layout-renderer)
+		/// </summary>
+		public bool AddGdc { get; set; }
+		/// <summary>
+		/// Add Nested Diagnostics Logical Context fields (https://github.com/NLog/NLog/wiki/NDLC-Layout-Renderer)
+		/// </summary>
+		public bool AddMdlc { get; set; }
+
+		/// <summary>
+		/// Add Mapped Diagnostic Logical Context fields (https://github.com/NLog/NLog/wiki/MDLC-Layout-Renderer)
+		/// </summary>
+		public bool AddNdlc { get; set; }
+
+		/// <summary>
 		/// Gets or sets whether to format the data in the body as a JSON structure.
 		/// Having it as a JSON structure means that you can more easily interpret the data
 		/// at its final resting place, than if it were a simple string - i.e. you don't
@@ -351,7 +365,7 @@ namespace Nlog.RabbitMQ.Target
 					var jsonSerializer = JsonSerializer;
 					lock (jsonSerializer)
 					{
-						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, this.Fields);
+						return MessageFormatter.GetMessageInner(jsonSerializer, AddGdc, AddNdlc, AddMdlc, message, messageSource, logEvent, this.Fields);
 					}
 				}
 				catch (Exception e)

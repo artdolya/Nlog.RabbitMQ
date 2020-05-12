@@ -13,7 +13,7 @@ namespace Nlog.RabbitMQ.Target
         private static readonly IDictionary<string, object> EmptyDictionary = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
         private static readonly ICollection<string> EmptyHashSet = Array.Empty<string>();
 
-        public static string GetMessageInner(JsonSerializer jsonSerializer, string mesage, string messageSource, LogEventInfo logEvent, IList<Field> fields)
+        public static string GetMessageInner(JsonSerializer jsonSerializer, bool addGdc, bool addNdlc, bool addMdlc, string mesage, string messageSource, LogEventInfo logEvent, IList<Field> fields)
         {
             var logLine = new LogLine
             {
@@ -48,6 +48,19 @@ namespace Nlog.RabbitMQ.Target
                     logLine.AddField(key, propertyPair.Value);
                 }
             }
+			
+            if (addGdc)
+                foreach (var gdc in GlobalDiagnosticsContext.GetNames())
+                    logLine.AddField(gdc, GlobalDiagnosticsContext.GetObject(gdc));
+
+            if (addNdlc)
+                foreach (var ndlc in NestedDiagnosticsLogicalContext.GetAllObjects())
+                    logLine.AddField("nested", ndlc);
+
+            if (addMdlc)
+                foreach (var mdlc in MappedDiagnosticsLogicalContext.GetNames())
+                    logLine.AddField(mdlc, MappedDiagnosticsLogicalContext.GetObject(mdlc));
+
 
             if (fields?.Count > 0)
             {
