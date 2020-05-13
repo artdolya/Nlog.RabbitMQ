@@ -18,7 +18,7 @@ namespace Nlog.RabbitMQ.Target
 	/// TODO
 	/// </summary>
 	[Target("RabbitMQ")]
-	public class RabbitMQTarget : TargetWithLayout
+	public class RabbitMQTarget : TargetWithContext
 	{
 		public enum CompressionTypes
 		{
@@ -173,20 +173,6 @@ namespace Nlog.RabbitMQ.Target
 		/// re-opened the next time a log message comes along.
 		/// </summary>
 		public ushort HeartBeatSeconds { get; set; } = 3;
-
-		/// <summary>
-		/// Add Global Diagnostic Context fields (https://github.com/NLog/NLog/wiki/Gdc-layout-renderer)
-		/// </summary>
-		public bool AddGdc { get; set; }
-		/// <summary>
-		/// Add Nested Diagnostics Logical Context fields (https://github.com/NLog/NLog/wiki/NDLC-Layout-Renderer)
-		/// </summary>
-		public bool AddMdlc { get; set; }
-
-		/// <summary>
-		/// Add Mapped Diagnostic Logical Context fields (https://github.com/NLog/NLog/wiki/MDLC-Layout-Renderer)
-		/// </summary>
-		public bool AddNdlc { get; set; }
 
 		/// <summary>
 		/// Gets or sets whether to format the data in the body as a JSON structure.
@@ -364,8 +350,8 @@ namespace Nlog.RabbitMQ.Target
 				{
 					var jsonSerializer = JsonSerializer;
 					lock (jsonSerializer)
-					{
-						return MessageFormatter.GetMessageInner(jsonSerializer, AddGdc, AddNdlc, AddMdlc, message, messageSource, logEvent, this.Fields);
+                    {
+						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, GetFullContextProperties(logEvent));
 					}
 				}
 				catch (Exception e)
@@ -376,6 +362,16 @@ namespace Nlog.RabbitMQ.Target
 				}
 			}
 		}
+
+        private IDictionary<string, object> GetFullContextProperties(LogEventInfo logEvent)
+        {
+            var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
+            var ndlcProperties = GetContextNdlc(logEvent);
+            if (IncludeNdlc && ndlcProperties.Count > 0)
+                allProperties.Add("nested", ndlcProperties);
+
+            return allProperties;
+        }
 
 		private IBasicProperties GetBasicProperties(LogEventInfo logEvent, IModel model)
 		{
