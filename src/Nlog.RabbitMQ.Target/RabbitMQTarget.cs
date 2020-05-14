@@ -116,9 +116,9 @@ namespace Nlog.RabbitMQ.Target
 
 		/// <summary>
 		///		Gets or sets the Application-specific connection name, will be displayed in the management UI
-		//		if RabbitMQ server supports it. This value doesn't have to be unique and cannot
-		//		be used as a connection identifier, e.g. in HTTP API requests. This value is
-		//		supposed to be human-readable.
+		///		if RabbitMQ server supports it. This value doesn't have to be unique and cannot
+		///		be used as a connection identifier, e.g. in HTTP API requests. This value is
+		///		supposed to be human-readable.
 		/// </summary>
 		public Layout ClientProvidedName { get; set; }
 
@@ -342,6 +342,7 @@ namespace Nlog.RabbitMQ.Target
 			else
 			{
 				var message = this.UseLayoutAsMessage ? RenderLogEvent(Layout, logEvent) : logEvent.FormattedMessage;
+                var fullContextProperties = GetFullContextProperties(logEvent);
 				var messageSource = RenderLogEvent(MessageSource, logEvent);
 				if (string.IsNullOrEmpty(messageSource))
 					messageSource = string.Format("nlog://{0}/{1}", System.Net.Dns.GetHostName(), logEvent.LoggerName);
@@ -351,7 +352,7 @@ namespace Nlog.RabbitMQ.Target
 					var jsonSerializer = JsonSerializer;
 					lock (jsonSerializer)
                     {
-						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, GetFullContextProperties(logEvent));
+						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, fullContextProperties);
 					}
 				}
 				catch (Exception e)
@@ -368,7 +369,7 @@ namespace Nlog.RabbitMQ.Target
             var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
             var ndlcProperties = GetContextNdlc(logEvent);
             if (IncludeNdlc && ndlcProperties.Count > 0)
-                allProperties.Add("nested", ndlcProperties);
+                allProperties.Add("ndlc", ndlcProperties);
 
             return allProperties;
         }
