@@ -367,9 +367,12 @@ namespace Nlog.RabbitMQ.Target
         private IDictionary<string, object> GetFullContextProperties(LogEventInfo logEvent)
         {
             var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
-            var ndlcProperties = GetContextNdlc(logEvent);
-            if (IncludeNdlc && ndlcProperties.Count > 0)
-                allProperties.Add("ndlc", ndlcProperties);
+            if (IncludeNdlc)
+            {
+                var ndlcProperties = GetContextNdlc(logEvent);
+                if (ndlcProperties.Count > 0)
+                    allProperties.Add("ndlc", ndlcProperties);
+            }
 
             return allProperties;
         }
