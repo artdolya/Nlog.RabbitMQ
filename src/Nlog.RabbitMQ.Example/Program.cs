@@ -20,7 +20,19 @@ namespace Nlog.RabbitMQ.Example
 				new KeyValuePair<string, object>("FieldC", "Field c")
 			};
 
+			// Provide global application properties
+			GlobalDiagnosticsContext.Set("globalFieldA", "Global Field A");
+            GlobalDiagnosticsContext.Set("globalFieldB", "Global Field B");
+
+			// Provide context properties for the current thread
+			NestedDiagnosticsLogicalContext.Push("Nested Field C");
+
+            // Provide scope detail for the current thread
+			MappedDiagnosticsLogicalContext.Set("mappedFieldA", "Mapped Field A");
+            MappedDiagnosticsLogicalContext.Set("mappedFieldB", "Mapped Field B");
+
 			logger.Log(logEventInfo);
+
 
             LogManager.Shutdown();
         }
