@@ -10,12 +10,7 @@
     <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ </Description>
     <Authors>Artem Dolya;Henrik Feldt</Authors>
     <PackageReleaseNotes>
-Upgraded to net461 and netstandard2.0
-Updated Newtonsoft.Json to ver. 11.0.2 for clean netstandard2.0 support.
-Changed config properties to Layout for easier Target configuration.
-Updated JsonSerializer options to handle cyclic-references and object-properties throwing exceptions.
-Updated JsonSerializer options to better handle System.Reflection object instead of dumping all types in application.
-Updated JsonSerializer options to serialize Enum as string-value instead of integer-value.
+Updated JsonSerializer options to better handle System.IO.Stream objects where properties often throws exceptions.
     </PackageReleaseNotes>
     <PackageTags>NLog;RabbitMQ;logging;log</PackageTags>
     <PackageProjectUrl>https://github.com/adolya/Nlog.RabbitMQ</PackageProjectUrl>

@@ -82,8 +82,10 @@ namespace Nlog.RabbitMQ.Target
             jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.MemberInfo)));
             jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Assembly)));
             jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Module)));
+            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.IO.Stream)));
             jsonSerializerSettings.Error = (sender, args) =>
             {
+                NLog.Common.InternalLogger.Debug(args.ErrorContext.Error, "RabbitMQ: Error serializing property '{0}', property ignored", args.ErrorContext.Member);
                 args.ErrorContext.Handled = true;
             };
             return jsonSerializerSettings;
