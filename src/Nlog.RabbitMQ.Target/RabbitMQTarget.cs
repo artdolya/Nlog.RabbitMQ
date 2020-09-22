@@ -235,7 +235,7 @@ namespace Nlog.RabbitMQ.Target
 			var uncompressedMessage = GetMessage(logEvent);
 			var message = CompressMessage(uncompressedMessage);
 
-			var routingKey = RenderLogEvent(Topic, logEvent);
+			var routingKey = RenderLogEvent(Topic,  logEvent);
 			if (routingKey.IndexOf("{0}") >= 0)
 				routingKey = routingKey.Replace("{0}", logEvent.Level.Name);
 
@@ -342,7 +342,7 @@ namespace Nlog.RabbitMQ.Target
 			else
 			{
 				var message = this.UseLayoutAsMessage ? RenderLogEvent(Layout, logEvent) : logEvent.FormattedMessage;
-				var fullContextProperties = GetFullContextProperties(logEvent);
+                var fullContextProperties = GetFullContextProperties(logEvent);
 				var messageSource = RenderLogEvent(MessageSource, logEvent);
 				if (string.IsNullOrEmpty(messageSource))
 					messageSource = string.Format("nlog://{0}/{1}", System.Net.Dns.GetHostName(), logEvent.LoggerName);
@@ -351,31 +351,31 @@ namespace Nlog.RabbitMQ.Target
 				{
 					var jsonSerializer = JsonSerializer;
 					lock (jsonSerializer)
-					{
+                    {
 						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, fullContextProperties);
 					}
 				}
 				catch (Exception e)
 				{
-					_jsonSerializer = null; // reset as it it might be broken
+					_jsonSerializer = null;	// reset as it it might be broken
 					InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Failed to serialize LogEvent: {1}", Name, e.Message);
 					throw;
 				}
 			}
 		}
 
-		private IDictionary<string, object> GetFullContextProperties(LogEventInfo logEvent)
-		{
-			var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
-			if (IncludeNdlc)
-			{
-				var ndlcProperties = GetContextNdlc(logEvent);
-				if (ndlcProperties.Count > 0)
-					allProperties.Add("ndlc", ndlcProperties);
-			}
+        private IDictionary<string, object> GetFullContextProperties(LogEventInfo logEvent)
+        {
+            var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
+            if (IncludeNdlc)
+            {
+                var ndlcProperties = GetContextNdlc(logEvent);
+                if (ndlcProperties.Count > 0)
+                    allProperties.Add("ndlc", ndlcProperties);
+            }
 
-			return allProperties;
-		}
+            return allProperties;
+        }
 
 		private IBasicProperties GetBasicProperties(LogEventInfo logEvent, IModel model)
 		{
@@ -515,7 +515,7 @@ namespace Nlog.RabbitMQ.Target
 		private ConnectionFactory GetConnectionFac(out string exchange, out string exchangeType, out string clientProvidedName)
 		{
 			var nullLogEvent = LogEventInfo.CreateNullEvent();
-			var hostName = RenderLogEvent(HostName, nullLogEvent);
+			var hostName = RenderLogEvent(HostName, nullLogEvent); 
 			var port = Convert.ToInt32(RenderLogEvent(Port, nullLogEvent));
 			var vHost = RenderLogEvent(VHost, nullLogEvent);
 			exchange = RenderLogEvent(Exchange, nullLogEvent);
@@ -586,7 +586,7 @@ namespace Nlog.RabbitMQ.Target
 					{
 						// you get 1.5 seconds to shut down!
 						if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
-							connection.Close(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
+							connection.Close(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500)); 
 						else
 							connection.Abort(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
 					}
