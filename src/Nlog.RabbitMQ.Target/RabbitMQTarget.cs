@@ -73,7 +73,7 @@ namespace Nlog.RabbitMQ.Target
 		/// 	listening port).
 		/// 	The default is '5672'.
 		/// </summary>
-		public ushort Port { get; set; } = 5672;
+		public Layout Port { get; set; } = "5672";
 
 		///<summary>
 		///	Gets or sets the routing key (aka. topic) with which
@@ -515,7 +515,8 @@ namespace Nlog.RabbitMQ.Target
 		private ConnectionFactory GetConnectionFac(out string exchange, out string exchangeType, out string clientProvidedName)
 		{
 			var nullLogEvent = LogEventInfo.CreateNullEvent();
-			var hostName = RenderLogEvent(HostName, nullLogEvent);
+			var hostName = RenderLogEvent(HostName, nullLogEvent); 
+			var port = Convert.ToInt32(RenderLogEvent(Port, nullLogEvent));
 			var vHost = RenderLogEvent(VHost, nullLogEvent);
 			exchange = RenderLogEvent(Exchange, nullLogEvent);
 			exchangeType = RenderLogEvent(ExchangeType, nullLogEvent);
@@ -532,7 +533,7 @@ namespace Nlog.RabbitMQ.Target
 				UserName = userName,
 				Password = password,
 				RequestedHeartbeat = TimeSpan.FromSeconds(HeartBeatSeconds),
-				Port = Port,
+				Port = port,
 				Ssl = new SslOption()
 				{
 					Enabled = UseSsl,
