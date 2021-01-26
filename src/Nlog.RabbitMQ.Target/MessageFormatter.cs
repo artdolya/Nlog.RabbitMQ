@@ -14,7 +14,7 @@ namespace Nlog.RabbitMQ.Target
         private static readonly IDictionary<string, object> EmptyDictionary = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
         private static readonly ICollection<string> EmptyHashSet = Array.Empty<string>();
 
-        public static string GetMessageInner(JsonSerializer jsonSerializer, string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, IDictionary<string,object> allProperties)
+        public static string GetMessageInner(JsonSerializer jsonSerializer, string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, IDictionary<string, object> allProperties)
         {
             var logLine = new LogLine
             {
