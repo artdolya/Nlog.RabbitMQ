@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -15,7 +15,7 @@ using RabbitMQ.Client;
 namespace Nlog.RabbitMQ.Target
 {
     /// <summary>
-    /// TODO
+    /// NLog target for writing to RabbitMQ Topic
     /// </summary>
     [Target("RabbitMQ")]
     public class RabbitMQTarget : TargetWithContext
@@ -31,8 +31,8 @@ namespace Nlog.RabbitMQ.Target
         private string _ModelExchange;
         private readonly Encoding _Encoding = Encoding.UTF8;
 
-        private readonly Queue<Tuple<byte[], IBasicProperties, string>> _UnsentMessages
-            = new Queue<Tuple<byte[], IBasicProperties, string>>(512);
+        private readonly Queue<Tuple<byte[], IBasicProperties, Func<IBasicProperties, IBasicProperties>, string>> _UnsentMessages
+            = new Queue<Tuple<byte[], IBasicProperties, Func<IBasicProperties, IBasicProperties>, string>>(512);
 
         private readonly object _sync = new object();
 
@@ -259,11 +259,10 @@ namespace Nlog.RabbitMQ.Target
                 modelExchange = _ModelExchange;
             }
 
-            var basicProperties = GetBasicProperties(logEvent, model);
-
+            var basicProperties = model != null ? GetBasicProperties(logEvent, model) : null;
             if (model == null || !model.IsOpen)
             {
-                if (!AddUnsent(routingKey, basicProperties, message))
+                if (!AddUnsent(logEvent, routingKey, basicProperties, message))
                 {
                     throw new InvalidOperationException("LogEvent discarded because RabbitMQ instance is offline and reached MaxBuffer");
                 }
@@ -281,13 +280,13 @@ namespace Nlog.RabbitMQ.Target
             catch (IOException e)
             {
                 InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not send to RabbitMQ instance: {1}", Name, e.Message);
-                if (!AddUnsent(routingKey, basicProperties, message))
+                if (!AddUnsent(logEvent, routingKey, basicProperties, message))
                     throw;
             }
             catch (ObjectDisposedException e)
             {
                 InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not send to RabbitMQ instance: {1}", Name, e.Message);
-                if (!AddUnsent(routingKey, basicProperties, message))
+                if (!AddUnsent(logEvent, routingKey, basicProperties, message))
                     throw;
             }
             catch (Exception e)
@@ -305,11 +304,14 @@ namespace Nlog.RabbitMQ.Target
             }
         }
 
-        private bool AddUnsent(string routingKey, IBasicProperties basicProperties, byte[] message)
+        private bool AddUnsent(LogEventInfo logEvent, string routingKey, IBasicProperties basicProperties, byte[] message)
         {
             if (_UnsentMessages.Count < MaxBuffer)
             {
-                _UnsentMessages.Enqueue(Tuple.Create(message, basicProperties, routingKey));
+                Func<IBasicProperties, IBasicProperties> propertyResolver = (props) => props;
+                if (basicProperties == null)
+                    propertyResolver = (props) => _Model != null ? GetBasicProperties(logEvent, _Model) : null;
+                _UnsentMessages.Enqueue(Tuple.Create(message, basicProperties, propertyResolver, routingKey));
                 return true;
             }
             else
@@ -326,7 +328,8 @@ namespace Nlog.RabbitMQ.Target
             {
                 var tuple = _UnsentMessages.Dequeue();
                 InternalLogger.Info("RabbitMQTarget(Name={0}): Publishing unsent message: {1}.", Name, tuple);
-                Publish(model, tuple.Item1, tuple.Item2, tuple.Item3, exchange);
+                var basicProperties = tuple.Item3.Invoke(tuple.Item2);
+                Publish(model, tuple.Item1, basicProperties, tuple.Item4, exchange);
             }
         }
 
@@ -497,7 +500,7 @@ namespace Nlog.RabbitMQ.Target
 
                         if (shutdownConnection == null)
                         {
-                            InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not connect to Rabbit instance: {1}", Name, e.Message));
+                            InternalLogger.Error(e, string.Format("RabbitMQTarget(Name={0}): Could not connect to RabbitMQ instance: {1}", Name, e.Message));
                         }
                         else
                         {
@@ -530,11 +533,11 @@ namespace Nlog.RabbitMQ.Target
             var completedTask = Task.WhenAny(t, Task.Delay(TimeSpan.FromMilliseconds(timeoutMilliseconds))).ConfigureAwait(false).GetAwaiter().GetResult();
             if (!ReferenceEquals(completedTask, t))
             {
-                InternalLogger.Warn("RabbitMQTarget(Name={0}): Starting connection-task timed out, continuing", Name);
+                InternalLogger.Warn("RabbitMQTarget(Name={0}): Connection timeout to RabbitMQ instance after {1}ms", Name, timeoutMilliseconds);
             }
             else if (completedTask.Exception != null)
             {
-                InternalLogger.Error(completedTask.Exception, "RabbitMQTarget(Name={0}): Starting connection-task failed: {0}", Name, completedTask.Exception.Message);
+                InternalLogger.Error(completedTask.Exception, "RabbitMQTarget(Name={0}): Connection attempt to RabbitMQ instance failed: {1}", Name, completedTask.Exception.Message);
             }
         }
 
