@@ -14,7 +14,7 @@ namespace Nlog.RabbitMQ.Target
         private static readonly IDictionary<string, object> EmptyDictionary = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
         private static readonly ICollection<string> EmptyHashSet = Array.Empty<string>();
 
-        public static string GetMessageInner(JsonSerializer jsonSerializer, string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, IDictionary<string,object> allProperties)
+        public static string GetMessageInner(JsonSerializer jsonSerializer, string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, ICollection<KeyValuePair<string,object>> contextProperties)
         {
             var logLine = new LogLine
             {
@@ -50,8 +50,11 @@ namespace Nlog.RabbitMQ.Target
                 }
             }
 
-            foreach (var p in allProperties ?? Enumerable.Empty<KeyValuePair<string, object>>())
-                logLine.AddField(p.Key, p.Value);
+            if (contextProperties?.Count > 0)
+            {
+                foreach (var p in contextProperties)
+                    logLine.AddField(p.Key, p.Value);
+            }
 
             if (fields?.Count > 0)
             {

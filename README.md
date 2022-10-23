@@ -60,17 +60,16 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
 				maxBuffer="10240"
 				heartBeatSeconds="3"
 				Timeout="3000"
-				layout="${longdate}|${level:uppercase=true}|${logger}|${message}"
-				messageSource="nlog://${machinename}/${logger}"
+				layout="${message}"
+				messageSource="nlog://${hostname}/${logger}"
 				UseJSON="false"
-				UseLayoutAsMessage="false"
 				UseSsl="false"
 				SslCertPath=""
 				SslCertPassphrase=""
 				Compression="None"
 				DeliveryMode="NonPersistent">
 			<field key="threadid" layout="${threadid}" />
-			<field key="machinename" layout="${machinename}" />
+			<field key="hostname" layout="${hostname}" />
 		</target>
 	</targets>
 
