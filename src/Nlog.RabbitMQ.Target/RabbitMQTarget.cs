@@ -159,7 +159,7 @@ namespace Nlog.RabbitMQ.Target
 		/// <summary>
 		///		Gets or sets the Layout for rendering <see cref="LogLine.Source"/> when enabling <see cref="UseJSON"/>
 		/// </summary>
-		public Layout MessageSource { get; set; } = "nlog://${machinename}/${logger}";
+		public Layout MessageSource { get; set; } = "nlog://${hostname}/${logger}";
 
 		/// <summary>
 		/// Gets or sets the maximum number of messages to save in the case
