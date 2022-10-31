@@ -23,5 +23,7 @@ Updated JsonSerializer options to better handle System.IO.Stream objects where p
     <PackageReference Include="RabbitMQ.Client" Version="6.2.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
-
+  <ItemGroup>
+      <None Include="docs\readme.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 </Project>

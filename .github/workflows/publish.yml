@@ -1,4 +1,6 @@
 name: Release to Nuget
+env:
+  release_notes: 'Read me added'
 
 on:
   release:
@@ -16,7 +18,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Create NuGet Package
-      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes=${{ github.event.release.generate_release_notes }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
+      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes=${{ env.release_notes }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
       working-directory: ./src/Nlog.RabbitMQ.Target
     - name: Publish Nuget Package
       run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
