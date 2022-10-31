@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <VersionPrefix>3.0.0</VersionPrefix>
-    <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0;net6.0</TargetFrameworks>
 
     <Title>Nlog.RabbitMQ</Title>
     <PackageId>Nlog.RabbitMQ.Target</PackageId>
     <Company>Nlog.RabbitMQ</Company>
     <Description>NLog target for the RabbitMQ.Client. Forked from https://github.com/haf/NLog.RabbitMQ </Description>
-    <Authors>Artem Dolya;Henrik Feldt</Authors>
+    <Authors>Artem Dolya;Rolf Kristensen;Henrik Feldt</Authors>
     <PackageReleaseNotes>
 Updated JsonSerializer options to better handle System.IO.Stream objects where properties often throws exceptions.
     </PackageReleaseNotes>
