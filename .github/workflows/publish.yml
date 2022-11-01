@@ -23,12 +23,12 @@ jobs:
         retries: 3
         script: |
           github.rest.repos.getReleaseByTag({
-            tag: github.event.release.tag_name,
+            tag: ${{ github.event.release.tag_name }},
             owner: context.repo.owner,
             repo: context.repo.repo
           })
     - name: Create NuGet Package
-      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.set-result.outputs.result.body }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
+      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result.body }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
       working-directory: ./src/Nlog.RabbitMQ.Target
     - name: Publish Nuget Package
       run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
