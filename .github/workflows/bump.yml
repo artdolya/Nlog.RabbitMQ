@@ -27,7 +27,7 @@ jobs:
   
   bump:
     name: Bump Version
-    build: job1
+    needs: build
     runs-on: ubuntu-22.04
     steps:
     - name: Bump version and push tag
