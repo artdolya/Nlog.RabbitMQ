@@ -1,5 +1,4 @@
 name: Release to Nuget
-
 on:
     release:
         types: [published]
