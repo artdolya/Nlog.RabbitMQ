@@ -49,6 +49,14 @@ namespace Nlog.RabbitMQ.Target
 		#region Properties
 
 		/// <summary>
+		/// 	Gets or sets the uri to use for the connection (Alternative to the individual connection-properties)
+		/// </summary>
+		/// <remarks>
+		///		amqp://myuser:mypass@myrabbitserver:5672/filestream
+		/// </remarks>
+		public Layout Uri { get; set; }
+
+		/// <summary>
 		/// 	Gets or sets the virtual host to publish to.
 		/// </summary>
 		public Layout VHost { get; set; } = "/";
@@ -515,18 +523,19 @@ namespace Nlog.RabbitMQ.Target
 		private ConnectionFactory GetConnectionFac(out string exchange, out string exchangeType, out string clientProvidedName)
 		{
 			var nullLogEvent = LogEventInfo.CreateNullEvent();
-			var hostName = RenderLogEvent(HostName, nullLogEvent); 
-			var port = Convert.ToInt32(RenderLogEvent(Port, nullLogEvent));
-			var vHost = RenderLogEvent(VHost, nullLogEvent);
+
 			exchange = RenderLogEvent(Exchange, nullLogEvent);
 			exchangeType = RenderLogEvent(ExchangeType, nullLogEvent);
 			clientProvidedName = RenderLogEvent(ClientProvidedName, nullLogEvent);
+
+			var uriString = RenderLogEvent(Uri, nullLogEvent);
+			var hostName = RenderLogEvent(HostName, nullLogEvent); 
+			var port = Convert.ToInt32(RenderLogEvent(Port, nullLogEvent));
+			var vHost = RenderLogEvent(VHost, nullLogEvent);
 			var userName = RenderLogEvent(UserName, nullLogEvent);
 			var password = RenderLogEvent(Password, nullLogEvent);
-			var sslCertPath = RenderLogEvent(SslCertPath, nullLogEvent);
-			var sslCertPassphrase = RenderLogEvent(SslCertPassphrase, nullLogEvent);
 
-			return new ConnectionFactory
+			var factory = new ConnectionFactory
 			{
 				HostName = hostName,
 				VirtualHost = vHost,
@@ -534,14 +543,27 @@ namespace Nlog.RabbitMQ.Target
 				Password = password,
 				RequestedHeartbeat = TimeSpan.FromSeconds(HeartBeatSeconds),
 				Port = port,
-				Ssl = new SslOption()
+			};
+
+			if (UseSsl)
+			{
+ 				var sslCertPath = RenderLogEvent(SslCertPath, nullLogEvent);
+				var sslCertPassphrase = RenderLogEvent(SslCertPassphrase, nullLogEvent);
+				factory.Ssl = new SslOption()
 				{
 					Enabled = UseSsl,
 					CertPath = sslCertPath,
 					CertPassphrase = sslCertPassphrase,
 					ServerName = hostName
-				}
-			};
+				};
+			}
+
+			if (!string.IsNullOrWhiteSpace(uriString))
+			{
+				factory.Uri = new System.Uri(uriString);	// Extracts connection properties from Uri
+			}
+
+			return factory;
 		}
 
 		#region ConnectionShutdownEventHandler
