@@ -1,1 +1,1 @@
-# NLog target for the RabbitMQ.Client.
+# NLog target for the RabbitMQ.Client
