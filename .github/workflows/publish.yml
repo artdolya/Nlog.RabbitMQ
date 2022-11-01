@@ -23,14 +23,18 @@ jobs:
                         owner: context.repo.owner,
                         repo: context.repo.repo
                       })
+
             - name: Checkout
               uses: actions/checkout@v3
+
             - name: Setup .NET Core
               uses: actions/setup-dotnet@v3
               with:
                   dotnet-version: 6.0.x
+
             - name: Create NuGet Package
               run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result.body }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
               working-directory: ./src/Nlog.RabbitMQ.Target
+
             - name: Publish Nuget Package
               run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
