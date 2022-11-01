@@ -10,19 +10,17 @@ jobs:
     runs-on: windows-2019
 
     steps:
-    - name: View context attributes
-      uses: actions/github-script@v6
-      with:
-        script: console.log(context)
     - name: Get Release Notes
       uses: actions/github-script@v6
       id: release-notes
+      env:
+        tag_name: ${{ github.event.release.tag_name }}
       with:
         result-encoding: string
         retries: 3
         script: |
           github.rest.repos.getReleaseByTag({
-            tag: ${{ github.event.release.tag_name }},
+            tag: process.env.tag_name,
             owner: context.repo.owner,
             repo: context.repo.repo
           })
