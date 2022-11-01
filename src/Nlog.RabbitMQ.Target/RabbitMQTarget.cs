@@ -39,6 +39,8 @@ namespace Nlog.RabbitMQ.Target
 		private JsonSerializer JsonSerializer => _jsonSerializer ?? (_jsonSerializer = JsonSerializer.Create(MessageFormatter.CreateJsonSerializerSettings()));
 		private JsonSerializer _jsonSerializer;
 
+		private readonly char[] _reusableEncodingBuffer = new char[32 * 1024];  // Avoid large-object-heap
+
 		public RabbitMQTarget()
 		{
 			Layout = "${message}";
@@ -234,7 +236,8 @@ namespace Nlog.RabbitMQ.Target
 		/// Using for JSON formating (when UseJSON set true). 
 		/// If set as true - <see cref="Message"/> field rendered by Layout prorerty instead getting <see cref="LogEventInfo.FormattedMessage"/>
 		/// </summary>
-		public bool UseLayoutAsMessage { get; set; }
+		[Obsolete("Message-field now always uses Layout, and default Layout is ${message}")]
+		public bool UseLayoutAsMessage { get; set; } = true;
 
 		#endregion
 
@@ -338,7 +341,19 @@ namespace Nlog.RabbitMQ.Target
 		private byte[] GetMessage(LogEventInfo logEvent)
 		{
 			var msg = GetMessageString(logEvent);
-			return _Encoding.GetBytes(msg);
+
+			if (msg.Length < _reusableEncodingBuffer.Length)
+			{
+				lock (_reusableEncodingBuffer)
+		                {
+		                    msg.CopyTo(0, _reusableEncodingBuffer, 0, msg.Length);
+		                    return _Encoding.GetBytes(_reusableEncodingBuffer, 0, msg.Length);
+	        		}
+	        	}
+			else
+			{
+				return _Encoding.GetBytes(msg);   // Calls string.ToCharArray()
+			}
 		}
 
 		private string GetMessageString(LogEventInfo logEvent)
@@ -349,8 +364,8 @@ namespace Nlog.RabbitMQ.Target
 			}
 			else
 			{
-				var message = this.UseLayoutAsMessage ? RenderLogEvent(Layout, logEvent) : logEvent.FormattedMessage;
-                var fullContextProperties = GetFullContextProperties(logEvent);
+				var message = RenderLogEvent(Layout, logEvent);
+				var contextProperties = GetFullContextProperties(logEvent);
 				var messageSource = RenderLogEvent(MessageSource, logEvent);
 				if (string.IsNullOrEmpty(messageSource))
 					messageSource = string.Format("nlog://{0}/{1}", System.Net.Dns.GetHostName(), logEvent.LoggerName);
@@ -359,8 +374,8 @@ namespace Nlog.RabbitMQ.Target
 				{
 					var jsonSerializer = JsonSerializer;
 					lock (jsonSerializer)
-                    {
-						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, fullContextProperties);
+					{
+						return MessageFormatter.GetMessageInner(jsonSerializer, message, messageSource, logEvent, Fields, contextProperties);
 					}
 				}
 				catch (Exception e)
@@ -374,12 +389,15 @@ namespace Nlog.RabbitMQ.Target
 
         private IDictionary<string, object> GetFullContextProperties(LogEventInfo logEvent)
         {
-            var allProperties = GetContextProperties(logEvent) ?? new Dictionary<string, object>();
+            var allProperties = GetContextProperties(logEvent);
             if (IncludeNdlc)
             {
                 var ndlcProperties = GetContextNdlc(logEvent);
                 if (ndlcProperties.Count > 0)
+                {
+                    allProperties = allProperties ?? new Dictionary<string, object>();
                     allProperties.Add("ndlc", ndlcProperties);
+                }
             }
 
             return allProperties;
