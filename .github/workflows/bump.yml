@@ -7,6 +7,7 @@ on:
       - master
 jobs:
   build:
+    name: Build check
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
@@ -25,6 +26,8 @@ jobs:
       run: dotnet test --no-restore --verbosity normal
   
   bump:
+    name: Bump Version
+    build: job1
     runs-on: ubuntu-22.04
     steps:
     - name: Bump version and push tag
