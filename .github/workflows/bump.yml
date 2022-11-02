@@ -6,30 +6,31 @@ on:
     branches:
       - master
 jobs:
-  build:
-    name: Build check
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: "0"
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0.x
-      - name: Install dependencies
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-      - name: Test
-        run: dotnet test --no-restore --verbosity normal
+  # build:
+  #   name: Build check
+  #   runs-on: windows-2019
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Setup .NET Core
+  #     uses: actions/setup-dotnet@v3
+  #     with:
+  #       dotnet-version: 6.0.x
+  #   - name: Install dependencies
+  #     run: dotnet restore
+  #   - name: Build
+  #     run: dotnet build --configuration Release --no-restore
+  #   - name: Test
+  #     run: dotnet test --no-restore --verbosity normal
 
   bump:
     name: Bump Version
     needs: build
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: '0'
       - name: Bump version and push tag
         uses: anothrNick/github-tag-action@v1
         env:
