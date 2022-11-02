@@ -13,16 +13,19 @@ jobs:
         uses: actions/github-script@v6
         id: release-notes
         env:
-          tag_name: ${{ github.event.release.tag_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: '2.11.5'
+          repo_name: ${{ github.event.repository.name }}
+          repo_owner: ${{ github.event.repository.owner.name }}
         with:
-          result-encoding: string
           retries: 3
           script: |
-            github.rest.repos.getReleaseByTag({
+            var result = await github.rest.repos.getReleaseByTag({
               tag: process.env.tag_name,
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            })
+              owner: process.env.repo_owner,
+              repo: process.env.repo_name
+            });
+            return result.data.body;
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -33,7 +36,7 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Create NuGet Package
-        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result.body }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
+        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
         working-directory: ./src/Nlog.RabbitMQ.Target
 
       - name: Publish Nuget Package
