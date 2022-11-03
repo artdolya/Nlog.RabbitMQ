@@ -11,13 +11,11 @@ jobs:
     steps:
       - name: Get Release Notes Debug
         uses: actions/github-script@v6
-        id: release-notes
         env:
           repo_name: ${{ github.event.repository }}
         with:
           script: console.log(process.env.repo_name)
           
-
       - name: Get Release Notes
         uses: actions/github-script@v6
         id: release-notes
