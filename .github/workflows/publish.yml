@@ -14,15 +14,11 @@ jobs:
         id: release-notes
         env:
           tag_name: ${{ github.event.release.tag_name }}
-          repo_name: ${{ github.event.repository.name }}
-          repo_owner: adolya
-          owner: ${{ github.event.repository.owner.name }}
+          repo_name: ${{ github.repository }}
+          repo_owner: ${{ github.repository_owner }}
         with:
           retries: 3
           script: |
-            console.log("Owner is: " + process.env.owner);
-            console.log("Repo is: " + process.env.repo_name);
-            console.log("Tag is: " + process.env.tag_name);
             var result = await github.rest.repos.getReleaseByTag({
               tag: process.env.tag_name,
               owner: process.env.repo_owner,
