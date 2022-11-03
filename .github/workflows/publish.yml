@@ -9,23 +9,20 @@ jobs:
     runs-on: windows-2019
 
     steps:
-      - name: Get Release Notes Debug
-        uses: actions/github-script@v6
-        env:
-          repo_name: ${{ github.event.repository }}
-        with:
-          script: console.log(process.env.repo_name)
-          
       - name: Get Release Notes
         uses: actions/github-script@v6
         id: release-notes
         env:
           tag_name: ${{ github.event.release.tag_name }}
           repo_name: ${{ github.event.repository.name }}
-          repo_owner: ${{ github.event.repository.owner.name }}
+          repo_owner: adolya
+          owner: ${{ fromJSON(github.event.repository) }}
         with:
           retries: 3
           script: |
+            console.log("Owner is: " + process.env.owner);
+            console.log("Repo is: " + process.env.repo_name);
+            console.log("Tag is: " + process.env.tag_name);
             var result = await github.rest.repos.getReleaseByTag({
               tag: process.env.tag_name,
               owner: process.env.repo_owner,
@@ -45,5 +42,5 @@ jobs:
         run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
         working-directory: ./src/Nlog.RabbitMQ.Target
 
-      - name: Publish Nuget Package
-        run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
+    #   - name: Publish Nuget Package
+    #     run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
