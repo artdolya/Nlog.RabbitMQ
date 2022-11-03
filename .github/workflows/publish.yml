@@ -17,6 +17,7 @@ jobs:
         with:
           script: console.log(process.env.repo_name)
           
+
       - name: Get Release Notes
         uses: actions/github-script@v6
         id: release-notes
