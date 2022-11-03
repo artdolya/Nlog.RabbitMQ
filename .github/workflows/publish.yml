@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Create Nuget Package
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     steps:
       - name: Get Release Notes
@@ -16,7 +16,7 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           repo_name: ${{ github.event.repository.name }}
           repo_owner: adolya
-          owner: ${{ fromJSON(github.event.repository) }}
+          owner: '${{ fromJSON(github.event.repository) }}'
         with:
           retries: 3
           script: |
