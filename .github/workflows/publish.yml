@@ -16,7 +16,7 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           repo_name: ${{ github.event.repository.name }}
           repo_owner: adolya
-          owner: ${{ github.event.repository.owner.name }}'
+          owner: ${{ github.event.repository.owner.name }}
         with:
           retries: 3
           script: |
@@ -39,7 +39,7 @@ jobs:
           dotnet-version: 6.0.x
 
       - name: Create NuGet Package
-        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="${{ steps.release-notes.outputs.result }}" /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
+        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes=${{ steps.release-notes.outputs.result }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
         working-directory: ./src/Nlog.RabbitMQ.Target
 
       - name: Publish Nuget Package
