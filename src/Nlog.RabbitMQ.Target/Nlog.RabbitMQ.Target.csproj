@@ -16,6 +16,7 @@ Updated JsonSerializer options to better handle System.IO.Stream objects where p
     <PackageProjectUrl>https://github.com/adolya/Nlog.RabbitMQ</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/adolya/Nlog.RabbitMQ</RepositoryUrl>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
