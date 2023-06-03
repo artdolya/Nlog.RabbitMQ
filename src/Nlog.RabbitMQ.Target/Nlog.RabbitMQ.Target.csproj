@@ -13,9 +13,9 @@
 Updated JsonSerializer options to better handle System.IO.Stream objects where properties often throws exceptions.
     </PackageReleaseNotes>
     <PackageTags>NLog;RabbitMQ;logging;log</PackageTags>
-    <PackageProjectUrl>https://github.com/adolya/Nlog.RabbitMQ</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/artdolya/Nlog.RabbitMQ</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>git://github.com/adolya/Nlog.RabbitMQ</RepositoryUrl>
+    <RepositoryUrl>git://github.com/artdolya/Nlog.RabbitMQ</RepositoryUrl>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
 
