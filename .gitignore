@@ -19,3 +19,7 @@ packages/
 *.lock.json
 **/wwwroot/css/*.min.css
 **/wwwroot/js/*.min.js
+
+# IDE
+.vscode/
+.idea/
