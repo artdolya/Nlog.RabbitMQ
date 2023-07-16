@@ -2,6 +2,7 @@
 RabbitMQ Target for popular NLog logging tool
 
 [![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
+[![Bump version](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml/badge.svg)](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml)
 
 ## Minimum Recommended Configuration
 
