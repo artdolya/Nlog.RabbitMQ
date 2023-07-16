@@ -432,6 +432,16 @@ namespace Nlog.RabbitMQ.Target
             StartConnection(_Connection, Timeout, false);
         }
 
+        protected override void FlushAsync(AsyncContinuation asyncContinuation)
+        {
+            if (_Model?.IsOpen == true)
+            {
+                CheckUnsent(_Model, _ModelExchange);
+            }
+
+            base.FlushAsync(asyncContinuation);
+        }
+
         /// <summary>
         /// Never throws
         /// </summary>
@@ -587,8 +597,6 @@ namespace Nlog.RabbitMQ.Target
             return factory;
         }
 
-        #region ConnectionShutdownEventHandler
-
         private void ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
         {
             if (reason.ReplyCode != 200 /* Constants.ReplySuccess*/)
@@ -641,11 +649,14 @@ namespace Nlog.RabbitMQ.Target
             }
         }
 
-        #endregion
-
         // Dispose calls CloseTarget!
         protected override void CloseTarget()
         {
+            if (_UnsentMessages.Count > 0)
+            {
+                InternalLogger.Warn("RabbitMQTarget(Name={0}): Closing but still {1} unsent messages, because RabbitMQ instance is offline", Name, _UnsentMessages.Count);
+            }
+
             // using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
             var shutdownEventArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 200 /* Constants.ReplySuccess*/, "closing target", null);
             ShutdownAmqp(_Connection, shutdownEventArgs);
