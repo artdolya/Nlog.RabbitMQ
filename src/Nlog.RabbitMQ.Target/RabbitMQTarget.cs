@@ -81,9 +81,9 @@ namespace Nlog.RabbitMQ.Target
         /// 	Gets or sets the port to use
         /// 	for connections to the message broker (this is the broker's
         /// 	listening port).
-        /// 	The default is '5672'.
+        /// 	The default is '-1' (Resolves to 5672, or 5671 when UseSsl = true)
         /// </summary>
-        public Layout Port { get; set; } = "5672";
+        public Layout Port { get; set; } = AmqpTcpEndpoint.UseDefaultPort.ToString();
 
         ///<summary>
         ///	Gets or sets the routing key (aka. topic) with which
@@ -476,8 +476,8 @@ namespace Nlog.RabbitMQ.Target
 
                     try
                     {
-                        var factory = GetConnectionFac(out exchange, out var exchangeType, out var clientProvidedName);
-                        connection = string.IsNullOrEmpty(clientProvidedName) ? factory.CreateConnection() : factory.CreateConnection(clientProvidedName);
+                        var factory = GetConnectionFactory(out exchange, out var exchangeType, out var hostNames);
+                        connection = hostNames?.Count > 0 ? factory.CreateConnection(hostNames) : factory.CreateConnection();
                         connection.ConnectionShutdown += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e);
 
                         try
@@ -551,24 +551,52 @@ namespace Nlog.RabbitMQ.Target
             }
         }
 
-        private ConnectionFactory GetConnectionFac(out string exchange, out string exchangeType, out string clientProvidedName)
+        private ConnectionFactory GetConnectionFactory(out string exchange, out string exchangeType, out IList<AmqpTcpEndpoint> hostNames)
         {
             var nullLogEvent = LogEventInfo.CreateNullEvent();
 
             exchange = RenderLogEvent(Exchange, nullLogEvent);
             exchangeType = RenderLogEvent(ExchangeType, nullLogEvent);
-            clientProvidedName = RenderLogEvent(ClientProvidedName, nullLogEvent);
+            var clientProvidedName = RenderLogEvent(ClientProvidedName, nullLogEvent);
 
             var uriString = RenderLogEvent(Uri, nullLogEvent);
-            var hostName = RenderLogEvent(HostName, nullLogEvent);
+            var hostName = RenderLogEvent(HostName, nullLogEvent) ?? string.Empty;
             var port = Convert.ToInt32(RenderLogEvent(Port, nullLogEvent));
             var vHost = RenderLogEvent(VHost, nullLogEvent);
             var userName = RenderLogEvent(UserName, nullLogEvent);
             var password = RenderLogEvent(Password, nullLogEvent);
+            var sslCertPath = RenderLogEvent(SslCertPath, nullLogEvent);
+            var sslCertPassphrase = RenderLogEvent(SslCertPassphrase, nullLogEvent);
+
+            if (hostName.IndexOf(',') >= 0)
+            {
+                hostNames = new List<AmqpTcpEndpoint>();
+                foreach (var host in hostName.Split(','))
+                {
+                    if (string.IsNullOrWhiteSpace(host))
+                        continue;
+
+                    var endPoint = new AmqpTcpEndpoint()
+                    {
+                        HostName = host.Trim(),
+                        Port = port,
+                    };
+
+                    if (UseSsl)
+                    {
+                        endPoint.Ssl = ResolveSslOption(endPoint.HostName, sslCertPath, sslCertPassphrase);
+                    }
+
+                    hostNames.Add(endPoint);
+                }
+            }
+            else
+            {
+                hostNames = Array.Empty<AmqpTcpEndpoint>();
+            }
 
             var factory = new ConnectionFactory
             {
-                HostName = hostName,
                 VirtualHost = vHost,
                 UserName = userName,
                 Password = password,
@@ -576,17 +604,18 @@ namespace Nlog.RabbitMQ.Target
                 Port = port,
             };
 
-            if (UseSsl)
+            if (!string.IsNullOrEmpty(hostName) && hostNames.Count == 0)
             {
-                var sslCertPath = RenderLogEvent(SslCertPath, nullLogEvent);
-                var sslCertPassphrase = RenderLogEvent(SslCertPassphrase, nullLogEvent);
-                factory.Ssl = new SslOption()
+                factory.HostName = hostName.Trim();
+                if (UseSsl)
                 {
-                    Enabled = UseSsl,
-                    CertPath = sslCertPath,
-                    CertPassphrase = sslCertPassphrase,
-                    ServerName = hostName
-                };
+                    factory.Ssl = ResolveSslOption(factory.HostName, sslCertPath, sslCertPassphrase);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(clientProvidedName))
+            {
+                factory.ClientProvidedName = clientProvidedName;
             }
 
             if (!string.IsNullOrWhiteSpace(uriString))
@@ -595,6 +624,24 @@ namespace Nlog.RabbitMQ.Target
             }
 
             return factory;
+        }
+
+        private SslOption ResolveSslOption(string serverName, string sslCertPath, string sslCertPassphrase)
+        {
+            var sslOption = new SslOption()
+            {
+                Enabled = true,
+                ServerName = serverName,
+            };
+            if (!string.IsNullOrEmpty(sslCertPath))
+            {
+                sslOption.CertPath = sslCertPath;
+            }
+            if (!string.IsNullOrEmpty(sslCertPassphrase))
+            {
+                sslOption.CertPassphrase = sslCertPassphrase;
+            }
+            return sslOption;
         }
 
         private void ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
