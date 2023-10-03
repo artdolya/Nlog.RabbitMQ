@@ -26,8 +26,7 @@ jobs:
     name: Bump Version
     needs: build
     runs-on: ubuntu-22.04
-    permissions:
-      contents: write
+    permissions: write-all
     steps:
       - uses: actions/checkout@v3
         with:
