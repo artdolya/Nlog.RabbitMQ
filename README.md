@@ -63,6 +63,7 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
 				Timeout="3000"
 				layout="${message}"
 				messageSource="nlog://${hostname}/${logger}"
+				contentType="text/plain"
 				UseJSON="false"
 				UseSsl="false"
 				SslCertPath=""
