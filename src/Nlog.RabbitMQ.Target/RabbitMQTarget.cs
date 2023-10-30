@@ -172,6 +172,11 @@ namespace Nlog.RabbitMQ.Target
         public Layout MessageSource { get; set; } = "nlog://${hostname}/${logger}";
 
         /// <summary>
+        /// Gets or sets the ContentType to specify when sending. <see cref="IBasicProperties.ContentType" /> - MIME ContentType. Defaults to text/plain
+        /// </summary>
+        public Layout ContentType { get; set; } = "text/plain";
+
+        /// <summary>
         /// Gets or sets the maximum number of messages to save in the case
         /// that the RabbitMQ instance goes down. Must be >= 1. Defaults to 10240.
         /// </summary>
@@ -193,7 +198,11 @@ namespace Nlog.RabbitMQ.Target
         /// generated is logstash (http://logstash.net), elasticsearch (https://github.com/elasticsearch/elasticsearch)
         /// and kibana (http://rashidkpc.github.com/Kibana/)
         /// </summary>
-        public bool UseJSON { get; set; }
+        public bool UseJSON
+        {
+            get => ContentType?.ToString()?.IndexOf("json", StringComparison.OrdinalIgnoreCase) >= 0;
+            set => ContentType = value ? "application/json" : "text/plain";
+        }
 
         /// <summary>
         /// Enables SSL support to connect to the Message Queue. If this is enabled, 
@@ -410,7 +419,9 @@ namespace Nlog.RabbitMQ.Target
         {
             var basicProperties = model.CreateBasicProperties();
             basicProperties.ContentEncoding = "utf8";
-            basicProperties.ContentType = (UseJSON || Layout is JsonLayout) ? "application/json" : "text/plain";
+            var contentType = RenderLogEvent(ContentType, logEvent);
+            if (!string.IsNullOrEmpty(contentType))
+                basicProperties.ContentType = contentType;
             basicProperties.AppId = RenderLogEvent(AppId, logEvent);
             if (string.IsNullOrEmpty(basicProperties.AppId))
                 basicProperties.AppId = logEvent.LoggerName;
