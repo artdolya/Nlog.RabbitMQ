@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Common;
@@ -11,6 +5,14 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nlog.RabbitMQ.Target
 {
@@ -27,14 +29,14 @@ namespace Nlog.RabbitMQ.Target
         };
 
         private IConnection _Connection;
-        private IModel _Model;
+        private IChannel _Channel;
         private string _ModelExchange;
         private readonly Encoding _Encoding = Encoding.UTF8;
 
-        private readonly Queue<Tuple<byte[], IBasicProperties, Func<IBasicProperties, IBasicProperties>, string>> _UnsentMessages
-            = new Queue<Tuple<byte[], IBasicProperties, Func<IBasicProperties, IBasicProperties>, string>>(512);
+        private readonly Queue<Tuple<byte[], BasicProperties, Func<BasicProperties, BasicProperties>, string>> _UnsentMessages
+            = new Queue<Tuple<byte[], BasicProperties, Func<BasicProperties, BasicProperties>, string>>(512);
 
-        private readonly object _sync = new object();
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
         private JsonSerializer JsonSerializer => _jsonSerializer ?? (_jsonSerializer = JsonSerializer.Create(MessageFormatter.CreateJsonSerializerSettings()));
         private JsonSerializer _jsonSerializer;
@@ -259,12 +261,12 @@ namespace Nlog.RabbitMQ.Target
             if (routingKey.IndexOf("{0}") >= 0)
                 routingKey = routingKey.Replace("{0}", logEvent.Level.Name);
 
-            var model = _Model;
+            var model = _Channel;
             var modelExchange = _ModelExchange;
             if (model == null || !model.IsOpen)
             {
                 StartConnection(_Connection, Timeout, true);
-                model = _Model;
+                model = _Channel;
                 modelExchange = _ModelExchange;
             }
 
@@ -282,8 +284,12 @@ namespace Nlog.RabbitMQ.Target
 
             try
             {
-                CheckUnsent(model, modelExchange);
-                Publish(model, message, basicProperties, routingKey, modelExchange);
+                RunTaskSync(async () =>
+                {
+                    var token = CancellationToken.None;
+                    await CheckUnsent(model, modelExchange, token);
+                    await Publish(model, message, basicProperties, routingKey, modelExchange, token);
+                });
                 restartConnection = false;
             }
             catch (IOException e)
@@ -313,13 +319,13 @@ namespace Nlog.RabbitMQ.Target
             }
         }
 
-        private bool AddUnsent(LogEventInfo logEvent, string routingKey, IBasicProperties basicProperties, byte[] message)
+        private bool AddUnsent(LogEventInfo logEvent, string routingKey, BasicProperties basicProperties, byte[] message)
         {
             if (_UnsentMessages.Count < MaxBuffer)
             {
-                Func<IBasicProperties, IBasicProperties> propertyResolver = (props) => props;
+                Func<BasicProperties, BasicProperties> propertyResolver = (props) => props;
                 if (basicProperties == null)
-                    propertyResolver = (props) => _Model != null ? GetBasicProperties(logEvent, _Model) : null;
+                    propertyResolver = (props) => _Channel != null ? GetBasicProperties(logEvent, _Channel) : null;
                 _UnsentMessages.Enqueue(Tuple.Create(message, basicProperties, propertyResolver, routingKey));
                 return true;
             }
@@ -330,7 +336,7 @@ namespace Nlog.RabbitMQ.Target
             }
         }
 
-        private void CheckUnsent(IModel model, string exchange)
+        private async Task CheckUnsent(IChannel model, string exchange, CancellationToken cancellationToken)
         {
             // using a queue so that removing and publishing is a single operation
             while (_UnsentMessages.Count > 0)
@@ -338,16 +344,17 @@ namespace Nlog.RabbitMQ.Target
                 var tuple = _UnsentMessages.Dequeue();
                 InternalLogger.Info("RabbitMQTarget(Name={0}): Publishing unsent message: {1}.", Name, tuple);
                 var basicProperties = tuple.Item3.Invoke(tuple.Item2);
-                Publish(model, tuple.Item1, basicProperties, tuple.Item4, exchange);
+                await Publish(model, tuple.Item1, basicProperties, tuple.Item4, exchange, cancellationToken);
             }
         }
 
-        private void Publish(IModel model, byte[] bytes, IBasicProperties basicProperties, string routingKey, string exchange)
+        private async Task Publish(IChannel model, byte[] bytes, BasicProperties basicProperties, string routingKey, string exchange, CancellationToken cancellationToken)
         {
-            model.BasicPublish(exchange,
+            await model.BasicPublishAsync(exchange,
                 routingKey,
                 true, basicProperties,
-                bytes);
+                bytes,
+                cancellationToken);
         }
 
         private byte[] GetMessage(LogEventInfo logEvent)
@@ -415,9 +422,9 @@ namespace Nlog.RabbitMQ.Target
             return allProperties;
         }
 
-        private IBasicProperties GetBasicProperties(LogEventInfo logEvent, IModel model)
+        private BasicProperties GetBasicProperties(LogEventInfo logEvent, IChannel channel)
         {
-            var basicProperties = model.CreateBasicProperties();
+            var basicProperties = new BasicProperties();
             basicProperties.ContentEncoding = "utf8";
             var contentType = RenderLogEvent(ContentType, logEvent);
             if (!string.IsNullOrEmpty(contentType))
@@ -427,7 +434,7 @@ namespace Nlog.RabbitMQ.Target
                 basicProperties.AppId = logEvent.LoggerName;
             basicProperties.Timestamp = new AmqpTimestamp(MessageFormatter.GetEpochTimeStamp(logEvent));
             basicProperties.UserId = RenderLogEvent(UserName, logEvent);   // support Validated User-ID (see http://www.rabbitmq.com/extensions.html)
-            basicProperties.DeliveryMode = (byte)DeliveryMode;
+            basicProperties.DeliveryMode = DeliveryMode == DeliveryMode.Persistent ? DeliveryModes.Persistent : DeliveryModes.Transient;
             var appCorrelationId = RenderLogEvent(CorrelationId, logEvent);
             if (!string.IsNullOrEmpty(appCorrelationId))
                 basicProperties.CorrelationId = appCorrelationId;
@@ -445,9 +452,9 @@ namespace Nlog.RabbitMQ.Target
 
         protected override void FlushAsync(AsyncContinuation asyncContinuation)
         {
-            if (_Model?.IsOpen == true)
+            if (_Channel?.IsOpen == true)
             {
-                CheckUnsent(_Model, _ModelExchange);
+                RunTaskSync(async () => await CheckUnsent(_Channel, _ModelExchange, CancellationToken.None));
             }
 
             base.FlushAsync(asyncContinuation);
@@ -458,18 +465,19 @@ namespace Nlog.RabbitMQ.Target
         /// </summary>
         private void StartConnection(IConnection oldConnection, int timeoutMilliseconds, bool checkInitialized)
         {
-            if (!ReferenceEquals(oldConnection, _Connection) && (_Model?.IsOpen ?? false))
+            if (!ReferenceEquals(oldConnection, _Connection) && (_Channel?.IsOpen ?? false))
                 return;
 
-            var t = Task.Run(() =>
+            var t = Task.Run(async () =>
             {
                 // Do not lock on SyncRoot, as we are waiting on this task while holding SyncRoot-lock
-                lock (_sync)
+                _semaphoreSlim.Wait();
+                try
                 {
                     if (checkInitialized && !IsInitialized)
                         return;
 
-                    if (!ReferenceEquals(oldConnection, _Connection) && (_Model?.IsOpen ?? false))
+                    if (!ReferenceEquals(oldConnection, _Connection) && (_Channel?.IsOpen ?? false))
                         return;
 
                     InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt started...", Name);
@@ -478,22 +486,22 @@ namespace Nlog.RabbitMQ.Target
                     {
                         var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
     "Model not open to RabbitMQ instance", null);
-                        ShutdownAmqp(oldConnection, shutdownEvenArgs);
+                        await ShutdownAmqp(oldConnection, shutdownEvenArgs);
                     }
 
-                    IModel model = null;
+                    IChannel channel = null;
                     IConnection connection = null;
                     string exchange = null;
 
                     try
                     {
                         var factory = GetConnectionFactory(out exchange, out var exchangeType, out var hostNames);
-                        connection = hostNames?.Count > 0 ? factory.CreateConnection(hostNames) : factory.CreateConnection();
-                        connection.ConnectionShutdown += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e);
+                        connection = hostNames?.Count > 0 ? await factory.CreateConnectionAsync(hostNames) : await factory.CreateConnectionAsync();
+                        connection.ConnectionShutdownAsync += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e);
 
                         try
                         {
-                            model = connection.CreateModel();
+                            channel = await connection.CreateChannelAsync();
                         }
                         catch (Exception e)
                         {
@@ -501,11 +509,11 @@ namespace Nlog.RabbitMQ.Target
                             throw;
                         }
 
-                        if (model != null && !Passive)
+                        if (channel != null && !Passive)
                         {
                             try
                             {
-                                model.ExchangeDeclare(exchange, exchangeType, Durable);
+                                await channel.ExchangeDeclareAsync(exchange, exchangeType, Durable);
                             }
                             catch (Exception e)
                             {
@@ -525,29 +533,33 @@ namespace Nlog.RabbitMQ.Target
                         }
                         else
                         {
-                            model?.Dispose();
-                            model = null;
-                            shutdownConnection.Close(TimeSpan.FromMilliseconds(1000));
-                            shutdownConnection.Abort(TimeSpan.FromMilliseconds(1000));
+                            channel?.Dispose();
+                            channel = null;
+                            await shutdownConnection.CloseAsync(TimeSpan.FromMilliseconds(1000));
+                            await shutdownConnection.AbortAsync(TimeSpan.FromMilliseconds(1000));
                         }
                     }
                     finally
                     {
-                        if (connection != null && model != null)
+                        if (connection != null && channel != null)
                         {
-                            if ((_Model?.IsOpen ?? false))
+                            if ((_Channel?.IsOpen ?? false))
                             {
                                 InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt completed succesfully, but not needed", Name);
                             }
                             else
                             {
                                 _Connection = connection;
-                                _Model = model;
+                                _Channel = channel;
                                 _ModelExchange = exchange;
                                 InternalLogger.Info("RabbitMQTarget(Name={0}): Connection attempt completed succesfully", Name);
                             }
                         }
                     }
+                }
+                finally
+                {
+                    _semaphoreSlim.Release();
                 }
             });
 
@@ -655,7 +667,7 @@ namespace Nlog.RabbitMQ.Target
             return sslOption;
         }
 
-        private void ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
+        private async Task ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
         {
             if (reason.ReplyCode != 200 /* Constants.ReplySuccess*/)
             {
@@ -666,25 +678,26 @@ namespace Nlog.RabbitMQ.Target
                 InternalLogger.Info("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
             }
 
-            lock (_sync)
+            _semaphoreSlim.Wait();
+            try
             {
                 if (connection != null)
                 {
-                    IModel model = null;
+                    IChannel channel = null;
 
                     if (ReferenceEquals(connection, _Connection))
                     {
-                        model = _Model;
+                        channel = _Channel;
                         _Connection = null;
-                        _Model = null;
+                        _Channel = null;
                     }
 
                     try
                     {
                         if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
-                            model?.Close();
+                            await channel?.CloseAsync();
                         else
-                            model?.Abort(); // Abort is close without throwing Exceptions
+                            await channel?.AbortAsync(); // Abort is close without throwing Exceptions
                     }
                     catch (Exception e)
                     {
@@ -695,15 +708,19 @@ namespace Nlog.RabbitMQ.Target
                     {
                         // you get 1.5 seconds to shut down!
                         if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
-                            connection.Close(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
+                            await connection.CloseAsync(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
                         else
-                            connection.Abort(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
+                            await connection.AbortAsync(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
                     }
                     catch (Exception e)
                     {
                         InternalLogger.Error(e, "RabbitMQTarget(Name={0}): Could not close connection: {1}", Name, e.Message);
                     }
                 }
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
             }
         }
 
@@ -717,7 +734,7 @@ namespace Nlog.RabbitMQ.Target
 
             // using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
             var shutdownEventArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 200 /* Constants.ReplySuccess*/, "closing target", null);
-            ShutdownAmqp(_Connection, shutdownEventArgs);
+            RunTaskSync(async () => await ShutdownAmqp(_Connection, shutdownEventArgs));
             base.CloseTarget();
         }
 
@@ -748,6 +765,15 @@ namespace Nlog.RabbitMQ.Target
             }
 
             return gzipCompressedMemStream.ToArray();
+        }
+
+
+        /// <summary>
+        /// This method wraps an async task into a synchronous call
+        /// </summary>
+        private void RunTaskSync(Action action)
+        {
+            Task.Run(action).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
     }
