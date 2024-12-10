@@ -5,7 +5,6 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -484,9 +483,7 @@ namespace Nlog.RabbitMQ.Target
                     oldConnection = _Connection ?? oldConnection;
                     if (oldConnection != null)
                     {
-                        var shutdownEvenArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 504 /*Constants.ChannelError*/,
-    "Model not open to RabbitMQ instance", null);
-                        await ShutdownAmqp(oldConnection, shutdownEvenArgs);
+                        await ShutdownAmqp(oldConnection, 504 /*Constants.ChannelError*/, "Model not open to RabbitMQ instance");
                     }
 
                     IChannel channel = null;
@@ -497,7 +494,7 @@ namespace Nlog.RabbitMQ.Target
                     {
                         var factory = GetConnectionFactory(out exchange, out var exchangeType, out var hostNames);
                         connection = hostNames?.Count > 0 ? await factory.CreateConnectionAsync(hostNames) : await factory.CreateConnectionAsync();
-                        connection.ConnectionShutdownAsync += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e);
+                        connection.ConnectionShutdownAsync += (s, e) => ShutdownAmqp(ReferenceEquals(_Connection, connection) ? connection : null, e.ReplyCode, e.ReplyText);
 
                         try
                         {
@@ -667,15 +664,15 @@ namespace Nlog.RabbitMQ.Target
             return sslOption;
         }
 
-        private async Task ShutdownAmqp(IConnection connection, ShutdownEventArgs reason)
+        private async Task ShutdownAmqp(IConnection connection, ushort reasonReplyCode, string reasonReplyText)
         {
-            if (reason.ReplyCode != 200 /* Constants.ReplySuccess*/)
+            if (reasonReplyCode != 200 /* Constants.ReplySuccess*/)
             {
-                InternalLogger.Warn("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
+                InternalLogger.Warn("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reasonReplyCode, reasonReplyText);
             }
             else
             {
-                InternalLogger.Info("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reason.ReplyCode, reason.ReplyText);
+                InternalLogger.Info("RabbitMQTarget(Name={0}): Connection shutdown. ReplyCode={1}, ReplyText={2}", Name, reasonReplyCode, reasonReplyText);
             }
 
             _semaphoreSlim.Wait();
@@ -694,7 +691,7 @@ namespace Nlog.RabbitMQ.Target
 
                     try
                     {
-                        if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
+                        if (reasonReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
                             await channel?.CloseAsync();
                         else
                             await channel?.AbortAsync(); // Abort is close without throwing Exceptions
@@ -707,10 +704,10 @@ namespace Nlog.RabbitMQ.Target
                     try
                     {
                         // you get 1.5 seconds to shut down!
-                        if (reason.ReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
-                            await connection.CloseAsync(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
+                        if (reasonReplyCode == 200 /* Constants.ReplySuccess*/ && connection.IsOpen)
+                            await connection.CloseAsync(reasonReplyCode, reasonReplyText, TimeSpan.FromMilliseconds(1500));
                         else
-                            await connection.AbortAsync(reason.ReplyCode, reason.ReplyText, TimeSpan.FromMilliseconds(1500));
+                            await connection.AbortAsync(reasonReplyCode, reasonReplyText, TimeSpan.FromMilliseconds(1500));
                     }
                     catch (Exception e)
                     {
@@ -733,8 +730,7 @@ namespace Nlog.RabbitMQ.Target
             }
 
             // using this version of constructor, because RabbitMQ.Client from 3.5.x don't have ctor without cause parameter
-            var shutdownEventArgs = new ShutdownEventArgs(ShutdownInitiator.Application, 200 /* Constants.ReplySuccess*/, "closing target", null);
-            RunTaskSync(async () => await ShutdownAmqp(_Connection, shutdownEventArgs));
+            RunTaskSync(async () => await ShutdownAmqp(_Connection, 200 /* Constants.ReplySuccess*/, "closing target"));
             base.CloseTarget();
         }
 
