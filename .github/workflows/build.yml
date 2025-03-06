@@ -6,18 +6,15 @@ on:
 
 jobs:
   build:
-
-    runs-on: windows-2019
-
+    runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 6.0.x
-    - name: Install dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Build Solution
+        uses: artdolya/dotnet@master
+        with:
+          work-dir: src
+          dotnet-version: 8x
+          run-tests: true

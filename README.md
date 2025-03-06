@@ -1,8 +1,11 @@
 # Nlog.RabbitMQ.Target
 RabbitMQ Target for popular NLog logging tool
 
-[![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
+[![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/NLog.Targets.RabbitMq/)
 [![master](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml/badge.svg)](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml)
+
+## Previous version is being deprecated.
+[Previous]((https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)) version of this library is being deprecated. It is recommended to use the [new](https://www.nuget.org/packages/NLog.Targets.RabbitMq/) version of the library.
 
 ## Minimum Recommended Configuration
 
@@ -12,18 +15,18 @@ RabbitMQ Target for popular NLog logging tool
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <extensions>
-    <add assembly="Nlog.RabbitMQ.Target" />
+    <add assembly="NLog.Targets.RabbitMq" />
   </extensions>
 
   <targets async="true">
-    <target name="RabbitMQTarget"
-        xsi:type="RabbitMQ"
+    <target name="RabbitMqTarget"
+        xsi:type="RabbitMq"
         useJSON="true"
         layout="${message}" />
   </targets>
 
   <rules>
-    <logger name="*" minlevel="Trace" writeTo="RabbitMQTarget"/>
+    <logger name="*" minlevel="Trace" writeTo="RabbitMqTarget"/>
   </rules>
 
 </nlog>
@@ -39,14 +42,14 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<extensions>
-		<add assembly="Nlog.RabbitMQ.Target" />
+		<add assembly="NLog.Targets.RabbitMq" />
 	</extensions>
 
 	<targets>
 		<!-- these are the defaults (except 'topic' and 'appid'): -->
-		<target name="RabbitMQTarget"
-				xsi:type="RabbitMQ"
-				appid="NLog.RabbitMQ.DemoApp"
+		<target name="RabbitMq"
+				xsi:type="RabbitMq"
+				appid="NLog.RabbitMq.DemoApp"
 				correlationId=""
 				messageType=""
 				topic="DemoApp.Logging.${level}"
