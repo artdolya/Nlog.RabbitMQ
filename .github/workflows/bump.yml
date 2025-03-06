@@ -10,17 +10,15 @@ jobs:
     name: Build check
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Solution
+        uses: artdolya/actions/dotnet@master
         with:
-          dotnet-version: 6.0.x
-      - name: Install dependencies
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-      - name: Test
-        run: dotnet test --no-restore --verbosity normal
+          work-dir: src
+          dotnet-version: 8x
+          run-tests: true
 
   bump:
     name: Bump Version
