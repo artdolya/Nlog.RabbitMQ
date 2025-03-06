@@ -17,7 +17,7 @@ jobs:
         uses: artdolya/actions/dotnet@master
         with:
           work-dir: src
-          dotnet-version: 8x
+          dotnet-version: 8.x
           run-tests: true
 
   bump:
