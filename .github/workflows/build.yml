@@ -34,3 +34,11 @@ jobs:
 
       - name: Generated Version Tag
         run: echo $VERSION_TAG
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: patch
+          WITH_V: false
+          PRERELEASE: true
