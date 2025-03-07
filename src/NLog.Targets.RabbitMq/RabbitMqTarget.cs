@@ -153,7 +153,7 @@ public class RabbitMqTarget : TargetWithContext
             case CompressionTypes.GZip:
                 return CompressMessageGZip(messageBytes);
             default:
-                throw new NLogConfigurationException("Compression type '{0}' not supported.", Compression);
+                throw new NLogConfigurationException($"Compression type '{Compression}' not supported.");
         }
     }
 
