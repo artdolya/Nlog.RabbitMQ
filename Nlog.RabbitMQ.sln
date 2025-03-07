@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Sample", "src\Nlog.RabbitMQ.Sample\Nlog.RabbitMQ.Sample.csproj", "{D4295A8A-7014-439F-857E-05E7C6D90B2B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Targets.RabbitMq", "src\NLog.Targets.RabbitMq\NLog.Targets.RabbitMq.csproj", "{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Targets.RabbitMq.Tests", "src\NLog.Targets.RabbitMq.Tests\NLog.Targets.RabbitMq.Tests.csproj", "{36A98B2A-610E-4034-8F16-2BC4A4768E65}"
@@ -30,10 +28,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D4295A8A-7014-439F-857E-05E7C6D90B2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4295A8A-7014-439F-857E-05E7C6D90B2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4295A8A-7014-439F-857E-05E7C6D90B2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4295A8A-7014-439F-857E-05E7C6D90B2B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -47,7 +41,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{D4295A8A-7014-439F-857E-05E7C6D90B2B} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
 		{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
 		{36A98B2A-610E-4034-8F16-2BC4A4768E65} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
 		{12266784-3C6A-4598-B593-8F84C4BCC0D2} = {5A26CA6D-64DF-4A0F-9FE2-D6BE96AB3F38}
