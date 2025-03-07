@@ -18,14 +18,17 @@ jobs:
           dotnet-version: 9.x
           run-tests: true
           
-      - name: Log current github context
-        run: echo "${{ toJson(github) }}"
-        
-      - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEFAULT_BUMP: patch
-          CUSTOM_TAG: ${{ github.event.pull_request.head.sha }}
-          WITH_V: false
+      - name: Get latest stable tag from master
+        id: latest_tag
+        run: echo "LATEST_TAG=$(git describe --tags --abbrev=0 origin/master)" >> $GITHUB_ENV
 
+      - name: Get PR Number
+        id: pr_number
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
+      - name: Generate Version Tag
+        id: version_tag
+        run: echo "VERSION_TAG=${LATEST_TAG}-pr-${PR_NUMBER}-${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+
+      - name: Generated Version Tag
+        run: echo $VERSION_TAG
