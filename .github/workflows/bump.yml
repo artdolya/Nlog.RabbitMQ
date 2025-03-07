@@ -1,14 +1,15 @@
 name: Bump version
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
-      - master
+      - "master"
+
 jobs:
   build:
     name: Build check
-    runs-on: windows-2019
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,22 +17,9 @@ jobs:
       - name: Build Solution
         uses: artdolya/actions/dotnet@master
         with:
-          work-dir: ./src
           dotnet-version: 8.x
           run-tests: true
 
-  bump:
-    name: Bump Version
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: '0'
-          
       - name: Bump version and push tag
         uses: anothrNick/github-tag-action@v1
         env:

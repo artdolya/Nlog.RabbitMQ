@@ -17,6 +17,5 @@ jobs:
       - name: Build Solution
         uses: artdolya/actions/dotnet@master
         with:
-          work-dir: ./src
           dotnet-version: 8.x
           run-tests: true
