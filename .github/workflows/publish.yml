@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Create Nuget Package
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Get Release Notes
@@ -29,16 +29,16 @@ jobs:
             return result.data.body;
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.x
 
       - name: Create NuGet Package
         run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes=${{ steps.release-notes.outputs.result }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
-        working-directory: ./src/Nlog.RabbitMQ.Target
+        working-directory: ./src/NLog.Targets.RabbitMq
 
       - name: Publish Nuget Package
         run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
