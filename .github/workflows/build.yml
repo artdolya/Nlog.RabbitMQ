@@ -41,4 +41,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
           WITH_V: false
+          PRERELEASE_SUFFIX: pr-${{ github.event.pull_request.number }}
           PRERELEASE: true
