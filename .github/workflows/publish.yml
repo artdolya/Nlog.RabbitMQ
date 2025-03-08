@@ -5,16 +5,30 @@ on:
 
 jobs:
   build:
-    name: Create Nuget Package
+    name: Publish Nuget Package
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Publish Nuget Package
+      - name: Build and Publish Nuget Package
         uses: artdolya/actions/dotnet@master
+        id: build
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}
-          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+#          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
           work-dir: './src/NLog.Targets.RabbitMq'
+
+      - name: Create release notes file
+        working-directory: ${{ inputs.work-dir }}
+        run: |
+          printf "%s" ${{ steps.build.outputs.release-notes }} > release-notes.txt
+            
+      - name: Build nuget package
+        working-directory: ./src/NLog.Targets.RabbitMq
+        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:ReleaseNotesFile=release-notes.txt /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true        
+      
+      - name: Publish Nuget Package
+        working-directory: ./src/NLog.Targets.RabbitMq
+        run: dotnet nuget push **/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
