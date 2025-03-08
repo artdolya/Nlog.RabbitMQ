@@ -9,12 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Solution
+      - name: Publish Solution
         uses: artdolya/actions/dotnet@master
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}

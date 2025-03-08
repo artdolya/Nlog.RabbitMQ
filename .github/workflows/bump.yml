@@ -2,11 +2,15 @@ name: Bump version
 on:
   push:
     branches:
-      - "master"
+      - master  # Run version bump when code is pushed to master
+  pull_request:
+    types:
+      - closed  # Run PR tag cleanup when a PR is closed
+
 
 jobs:
-  build:
-    name: Build check
+  version-bump:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,3 +30,32 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
           WITH_V: false
+          
+  delete-pr-tags:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures all tags are available
+  
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+  
+      - name: Get PR Number
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+  
+      - name: Find and Delete PR Tags
+        run: |
+          TAGS=$(git tag | grep "pr-${PR_NUMBER}." || true)
+          
+          if [ -n "$TAGS" ]; then
+            echo "Deleting tags: $TAGS"
+            git push --delete origin $TAGS
+          else
+            echo "No matching PR tags found."
+          fi
+
