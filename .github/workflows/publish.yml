@@ -9,36 +9,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get Release Notes
-        uses: actions/github-script@v6
-        id: release-notes
-        env:
-          tag_name: ${{ github.event.release.tag_name }}
-          repo_name: ${{ github.event.repository.name }}
-          repo_owner: ${{ github.repository_owner }}
-        with:
-          retries: 3
-          script: |
-            console.log("Owner:"+process.env.repo_owner);
-            console.log("Repo:"+process.env.repo_name);
-            var result = await github.rest.repos.getReleaseByTag({
-              tag: process.env.tag_name,
-              owner: process.env.repo_owner,
-              repo: process.env.repo_name
-            });
-            return result.data.body;
+      
 
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Build Solution
+        uses: artdolya/actions/dotnet@master
         with:
-          dotnet-version: 8.x
-
-      - name: Create NuGet Package
-        run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes=${{ steps.release-notes.outputs.result }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:PublishRepositoryUrl=true
-        working-directory: ./src/NLog.Targets.RabbitMq
-
-      - name: Publish Nuget Package
-        run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json
+          dotnet-version: ${{ vars.DOTNET_VERSION }}
+          nuget-api-key: ${{ secrets.nuget_api_key }}
