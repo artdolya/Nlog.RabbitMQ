@@ -7,7 +7,6 @@ on:
     types:
       - closed  # Run PR tag cleanup when a PR is closed
 
-
 jobs:
   version-bump:
     if: github.event_name == 'push'

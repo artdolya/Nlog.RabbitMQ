@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Publish Solution
+      - name: Publish Nuget Package
         uses: artdolya/actions/dotnet@master
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}

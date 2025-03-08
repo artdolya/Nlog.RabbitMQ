@@ -4,7 +4,7 @@
         <VersionPrefix>3.0.0</VersionPrefix>
         <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
         <PackageReleaseNotes>$(ReleaseNotesFile)</PackageReleaseNotes>
-        <Title>NLog.RabbitMq</Title>
+        <Title>NLog.Targets.RabbitMq</Title>
         <PackageId>NLog.Targets.RabbitMq</PackageId>
         <Company>Nlog.RabbitMq</Company>
         <Description>NLog target for the RabbitMQ.Client.</Description>
@@ -20,7 +20,6 @@
     <ItemGroup>
         <PackageReference Include="NLog" Version="5.4.0" />
         <PackageReference Include="RabbitMQ.Client" Version="7.1.0" />
-        <PackageReference Include="Testcontainers.RabbitMq" Version="4.2.0" />
     </ItemGroup>
 
     <ItemGroup>
