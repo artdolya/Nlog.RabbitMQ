@@ -10,6 +10,10 @@
         <Description>NLog target for the RabbitMQ.Client.</Description>
         <Authors>Artem Dolya;Rolf Kristensen;Henrik Feldt</Authors>
         <RootNamespace>NLog.Targets.RabbitMq</RootNamespace>
+        <RepositoryUrl>git://github.com/artdolya/Nlog.RabbitMQ</RepositoryUrl>
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>NLog;RabbitMQ;logging;log</PackageTags>
     </PropertyGroup>
 
 

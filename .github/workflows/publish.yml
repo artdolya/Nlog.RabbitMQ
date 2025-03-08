@@ -19,3 +19,4 @@ jobs:
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+          work-dir: './src/NLog.Targets.RabbitMq'
