@@ -7,7 +7,7 @@
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <RootNamespace>NLog.Targets.RabbitMq.Tests</RootNamespace>
+        <RootNamespace>Nlog.RabbitMQ.Target.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NLog.Targets.RabbitMq\NLog.Targets.RabbitMq.csproj" />
+        <ProjectReference Include="..\Nlog.RabbitMQ.Target\Nlog.RabbitMQ.Target.csproj" />
     </ItemGroup>
 
 </Project>
