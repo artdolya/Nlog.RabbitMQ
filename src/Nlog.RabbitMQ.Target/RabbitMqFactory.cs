@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 using RabbitMQ.Client;
 
-namespace NLog.Targets.RabbitMq;
+namespace Nlog.RabbitMQ.Target;
 
 public class RabbitMqFactory
 {

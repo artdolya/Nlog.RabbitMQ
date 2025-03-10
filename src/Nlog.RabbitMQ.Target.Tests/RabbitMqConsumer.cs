@@ -3,7 +3,7 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public class RabbitMqConsumer
 {

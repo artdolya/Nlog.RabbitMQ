@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public static class TypeUtils
 {

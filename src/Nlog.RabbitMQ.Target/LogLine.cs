@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace NLog.Targets.RabbitMq
+namespace Nlog.RabbitMQ.Target
 {
     public class LogLine
     {

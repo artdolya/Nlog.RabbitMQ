@@ -1,10 +1,8 @@
 ﻿using DotNet.Testcontainers.Builders;
 
-using NLog.Targets.RabbitMq;
-
 using Testcontainers.RabbitMq;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public class NLoggerFactory : IAsyncLifetime
 {

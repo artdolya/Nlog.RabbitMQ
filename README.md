@@ -1,11 +1,8 @@
 # Nlog.RabbitMQ.Target
 RabbitMQ Target for popular NLog logging tool
 
-[![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/NLog.Targets.RabbitMq/)
+[![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
 [![master](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml/badge.svg)](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml)
-
-## Previous version is being deprecated.
-[Previous]((https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)) version of this library is being deprecated. It is recommended to use the [new](https://www.nuget.org/packages/NLog.Targets.RabbitMq/) version of the library.
 
 ## Minimum Recommended Configuration
 
@@ -15,7 +12,7 @@ RabbitMQ Target for popular NLog logging tool
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <extensions>
-    <add assembly="NLog.Targets.RabbitMq" />
+    <add assembly="Nlog.RabbitMQ.Target" />
   </extensions>
 
   <targets async="true">
@@ -42,7 +39,7 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<extensions>
-		<add assembly="NLog.Targets.RabbitMq" />
+		<add assembly="Nlog.RabbitMQ.Target" />
 	</extensions>
 
 	<targets>

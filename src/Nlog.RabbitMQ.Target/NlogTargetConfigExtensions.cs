@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using NLog;
 using NLog.Layouts;
 
 using RabbitMQ.Client;
 
-namespace NLog.Targets.RabbitMq;
+namespace Nlog.RabbitMQ.Target;
 
 public static class NlogTargetConfigExtensions
 {

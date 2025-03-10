@@ -1,4 +1,4 @@
-﻿namespace NLog.Targets.RabbitMq
+﻿namespace Nlog.RabbitMQ.Target
 {
     public enum DeliveryMode
     {

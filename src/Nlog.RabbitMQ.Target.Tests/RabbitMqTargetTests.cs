@@ -1,15 +1,9 @@
-
-using System.Text;
-using System.Text.Json;
-
-using DotNet.Testcontainers.Builders;
-
 using NLog.Common;
 using FluentAssertions;
 
-using NLog.Targets.RabbitMq;
+using NLog;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public class RabbitMqTargetTests : IClassFixture<NLoggerFactory>
 {

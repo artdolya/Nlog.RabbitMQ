@@ -1,9 +1,8 @@
 ﻿using FluentAssertions;
 
 using NLog.Layouts;
-using NLog.Targets.RabbitMq;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public class NlogTargetConfigExtensionsTests
 {

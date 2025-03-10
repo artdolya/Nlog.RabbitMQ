@@ -2,9 +2,9 @@
 
 using FluentAssertions;
 
-using NLog.Targets.RabbitMq;
+using NLog;
 
-namespace NLog.Targets.RabbitMQ.Tests;
+namespace Nlog.RabbitMQ.Target.Tests;
 
 public class MessageFormatterTests
 {
