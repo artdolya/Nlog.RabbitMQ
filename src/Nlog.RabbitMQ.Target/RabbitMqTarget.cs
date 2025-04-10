@@ -369,8 +369,8 @@ namespace Nlog.RabbitMQ.Target
         ///     at its final resting place, than if it were a simple string - i.e. you don't
         ///     have to mess with advanced parsers if you have this options for all of your
         ///     applications. A product that you can use for viewing logs
-        ///     generated is logstash (http://logstash.net), elasticsearch (https://github.com/elasticsearch/elasticsearch)
-        ///     and kibana (http://rashidkpc.github.com/Kibana/)
+        ///     generated is logstash (https://logstash.net), elasticsearch (https://github.com/elasticsearch/elasticsearch)
+        ///     and kibana (https://rashidkpc.github.com/Kibana/)
         /// </summary>
         public bool UseJSON
         {
