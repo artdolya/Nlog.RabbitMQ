@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -379,19 +379,19 @@ namespace Nlog.RabbitMQ.Target
         }
 
         /// <summary>
-        ///     Enables SSL support to connect to the Message Queue. If this is enabled,
-        ///     SslCertPath and SslCertPassphrase are required! For more information please
-        ///     visit http://www.rabbitmq.com/ssl.html
+        ///     Enables TLS support to connect to the Message Queue (AMQP over TLS).
         /// </summary>
         public bool UseSsl { get; set; }
 
         /// <summary>
-        ///     Location of client SSL certificate
+        ///     Location of client SSL certificate for mutual TLS.
+        ///     See https://www.rabbitmq.com/docs/ssl#dotnet-client
         /// </summary>
         public Layout SslCertPath { get; set; }
 
         /// <summary>
-        ///     Passphrase for generated SSL certificate defined in SslCertPath
+        ///     Passphrase for generated SSL certificate defined in SslCertPath for mutual TLS.
+        ///     See https://www.rabbitmq.com/docs/ssl#dotnet-client
         /// </summary>
         public Layout SslCertPassphrase { get; set; }
 
