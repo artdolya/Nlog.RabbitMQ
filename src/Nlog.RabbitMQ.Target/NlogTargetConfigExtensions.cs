@@ -17,7 +17,7 @@ public static class NlogTargetConfigExtensions
         ConnectionFactory factory = new ConnectionFactory();
         string sslCertPath = layoutRenderer(t => t.SslCertPath);
         string sslCertPassphrase = layoutRenderer(t => t.SslCertPassphrase);
-        bool useSsl = layoutRenderer(t => t.UseSsl.ToString()) == "true" ? true : false;
+        bool useSsl = layoutRenderer(t => t.UseSsl.ToString().ToLower()) == "true" ? true : false;
 
         Func<string, SslOption> sslOptionFactory = (hostName) =>
                                                    {
