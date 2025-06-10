@@ -2,19 +2,23 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using NLog;
 
 namespace Nlog.RabbitMQ.Target
 {
-    public static class MessageFormatter
+    public class MessageFormatter
     {
-        private static readonly DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-        private static readonly IDictionary<string, object> EmptyDictionary = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
-        private static readonly ICollection<string> EmptyHashSet = Array.Empty<string>();
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public static string GetMessageInner(JsonSerializer jsonSerializer, string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, ICollection<KeyValuePair<string, object>> contextProperties)
+        public MessageFormatter()
+        {
+            _jsonOptions = CreateJsonSerializerSettings();
+        }
+        
+        public string GetMessage(string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, ICollection<KeyValuePair<string, object>> contextProperties)
         {
             var logLine = new LogLine
             {
@@ -63,40 +67,20 @@ namespace Nlog.RabbitMQ.Target
             }
 
             if (logLine.Fields == null)
-                logLine.Fields = EmptyDictionary;
+                logLine.Fields = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
 
             if (logLine.Tags == null)
-                logLine.Tags = EmptyHashSet;
+                logLine.Tags = Array.Empty<string>();
 
-            var sb = new System.Text.StringBuilder(256);
-            var sw = new System.IO.StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                jsonWriter.Formatting = jsonSerializer.Formatting;
-                jsonSerializer.Serialize(jsonWriter, logLine, typeof(LogLine));
-            }
-            return sb.ToString();
+            var serializedJson = JsonSerializer.Serialize(logLine, typeof(LogLine), _jsonOptions);
+            return  serializedJson;
         }
 
-        public static JsonSerializerSettings CreateJsonSerializerSettings()
+        private JsonSerializerOptions CreateJsonSerializerSettings()
         {
-            var jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
-            jsonSerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.MemberInfo)));
-            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Assembly)));
-            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.Reflection.Module)));
-            jsonSerializerSettings.Converters.Add(new JsonToStringConverter(typeof(System.IO.Stream)));
-            jsonSerializerSettings.Error = (sender, args) =>
-            {
-                NLog.Common.InternalLogger.Debug(args.ErrorContext.Error, "RabbitMQ: Error serializing property '{0}', property ignored", args.ErrorContext.Member);
-                args.ErrorContext.Handled = true;
-            };
+            var jsonSerializerSettings = new JsonSerializerOptions { ReferenceHandler  = ReferenceHandler.IgnoreCycles };
+            jsonSerializerSettings.Converters.Add(new JsonStringEnumConverter());
             return jsonSerializerSettings;
-        }
-
-        public static long GetEpochTimeStamp(LogEventInfo @event)
-        {
-            return Convert.ToInt64((@event.TimeStamp - _epoch).TotalSeconds);
         }
     }
 }

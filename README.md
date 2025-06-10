@@ -16,14 +16,14 @@ RabbitMQ Target for popular NLog logging tool
   </extensions>
 
   <targets async="true">
-    <target name="RabbitMQTarget"
-        xsi:type="RabbitMQ"
+    <target name="RabbitMqTarget"
+        xsi:type="RabbitMq"
         useJSON="true"
         layout="${message}" />
   </targets>
 
   <rules>
-    <logger name="*" minlevel="Trace" writeTo="RabbitMQTarget"/>
+    <logger name="*" minlevel="Trace" writeTo="RabbitMqTarget"/>
   </rules>
 
 </nlog>
@@ -44,9 +44,9 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
 
 	<targets>
 		<!-- these are the defaults (except 'topic' and 'appid'): -->
-		<target name="RabbitMQTarget"
-				xsi:type="RabbitMQ"
-				appid="NLog.RabbitMQ.DemoApp"
+		<target name="RabbitMq"
+				xsi:type="RabbitMq"
+				appid="NLog.RabbitMq.DemoApp"
 				correlationId=""
 				messageType=""
 				topic="DemoApp.Logging.${level}"
