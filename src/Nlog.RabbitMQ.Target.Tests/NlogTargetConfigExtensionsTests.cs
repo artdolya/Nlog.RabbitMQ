@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 
 using NLog.Layouts;
 
@@ -70,7 +70,7 @@ public class NlogTargetConfigExtensionsTests
                                    };
 
         // Act
-        RabbitMqFactory factory = target.GetRabbitMqFactoryFromConfig(LayoutRenderer(target), true);
+        RabbitMqFactory factory = target.GetRabbitMqFactoryFromConfig(LayoutRenderer(target));
 
         // Assert
         factory.Should().NotBeNull();
