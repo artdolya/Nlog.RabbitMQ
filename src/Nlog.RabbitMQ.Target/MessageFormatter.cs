@@ -2,16 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NLog;
 
 namespace Nlog.RabbitMQ.Target
 {
     public class MessageFormatter
     {
-        private readonly JsonSerializerOptions _jsonOptions;
+        private readonly JsonSerializerSettings _jsonOptions;
 
         public MessageFormatter()
         {
@@ -40,8 +39,6 @@ namespace Nlog.RabbitMQ.Target
                         continue;
 
                     var value = propertyPair.Value;
-                    if (value is Delegate)
-                        continue;
 
                     if (key == "tags" && value is IEnumerable<string> tags)
                     {
@@ -52,18 +49,6 @@ namespace Nlog.RabbitMQ.Target
                     {
                         foreach (var kv in bonusFields)
                             logLine.AddField(kv.Key, kv.Value);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            JsonSerializer.Serialize(value, _jsonOptions);
-                        }
-                        catch (NotSupportedException ex)
-                        {
-                            Console.WriteLine($"Skipped unserializable property: {key} with error: {ex.Message}");
-                            continue;
-                        }
                     }
 
                     logLine.AddField(key, value);
@@ -82,20 +67,24 @@ namespace Nlog.RabbitMQ.Target
                     logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
             }
 
-            if (logLine.Fields == null)
-                logLine.Fields = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
+            logLine.Fields ??= new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
 
-            if (logLine.Tags == null)
-                logLine.Tags = Array.Empty<string>();
+            logLine.Tags ??= Array.Empty<string>();
 
-            string serializedJson = JsonSerializer.Serialize<LogLine>(logLine, _jsonOptions);
+            string serializedJson = JsonConvert.SerializeObject(logLine, typeof(LogLine), _jsonOptions);
             return serializedJson;
         }
 
-        private JsonSerializerOptions CreateJsonSerializerSettings()
+        private JsonSerializerSettings CreateJsonSerializerSettings()
         {
-            var jsonSerializerSettings = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
-            jsonSerializerSettings.Converters.Add(new JsonStringEnumConverter());
+            var jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+            jsonSerializerSettings.Converters.Add(
+                new StringEnumConverter()
+                );
+
             return jsonSerializerSettings;
         }
     }
