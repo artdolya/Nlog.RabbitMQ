@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -17,7 +17,7 @@ namespace Nlog.RabbitMQ.Target
         {
             _jsonOptions = CreateJsonSerializerSettings();
         }
-        
+
         public string GetMessage(string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, ICollection<KeyValuePair<string, object>> contextProperties)
         {
             var logLine = new LogLine
@@ -39,18 +39,34 @@ namespace Nlog.RabbitMQ.Target
                     if (string.IsNullOrEmpty(key))
                         continue;
 
-                    if (key == "tags" && propertyPair.Value is IEnumerable<string> tags)
+                    var value = propertyPair.Value;
+                    if (value is Delegate)
+                        continue;
+
+                    if (key == "tags" && value is IEnumerable<string> tags)
                     {
                         foreach (var tag in tags)
                             logLine.AddTag(tag);
                     }
-                    else if (key == "fields" && propertyPair.Value is IEnumerable<KeyValuePair<string, object>> bonusFields)
+                    else if (key == "fields" && value is IEnumerable<KeyValuePair<string, object>> bonusFields)
                     {
                         foreach (var kv in bonusFields)
                             logLine.AddField(kv.Key, kv.Value);
                     }
+                    else
+                    {
+                        try
+                        {
+                            JsonSerializer.Serialize(value, _jsonOptions);
+                        }
+                        catch (NotSupportedException ex)
+                        {
+                            Console.WriteLine($"Skipped unserializable property: {key} with error: {ex.Message}");
+                            continue;
+                        }
+                    }
 
-                    logLine.AddField(key, propertyPair.Value);
+                    logLine.AddField(key, value);
                 }
             }
 
@@ -72,13 +88,13 @@ namespace Nlog.RabbitMQ.Target
             if (logLine.Tags == null)
                 logLine.Tags = Array.Empty<string>();
 
-            var serializedJson = JsonSerializer.Serialize(logLine, typeof(LogLine), _jsonOptions);
-            return  serializedJson;
+            string serializedJson = JsonSerializer.Serialize<LogLine>(logLine, _jsonOptions);
+            return serializedJson;
         }
 
         private JsonSerializerOptions CreateJsonSerializerSettings()
         {
-            var jsonSerializerSettings = new JsonSerializerOptions { ReferenceHandler  = ReferenceHandler.IgnoreCycles };
+            var jsonSerializerSettings = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
             jsonSerializerSettings.Converters.Add(new JsonStringEnumConverter());
             return jsonSerializerSettings;
         }
