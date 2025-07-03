@@ -1,23 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NLog;
 
 namespace Nlog.RabbitMQ.Target
 {
     public class MessageFormatter
     {
-        private readonly JsonSerializerOptions _jsonOptions;
+        private readonly JsonSerializerSettings _jsonOptions;
 
         public MessageFormatter()
         {
             _jsonOptions = CreateJsonSerializerSettings();
         }
-        
+
         public string GetMessage(string message, string messageSource, LogEventInfo logEvent, IList<Field> fields, ICollection<KeyValuePair<string, object>> contextProperties)
         {
             var logLine = new LogLine
@@ -39,18 +38,20 @@ namespace Nlog.RabbitMQ.Target
                     if (string.IsNullOrEmpty(key))
                         continue;
 
-                    if (key == "tags" && propertyPair.Value is IEnumerable<string> tags)
+                    var value = propertyPair.Value;
+
+                    if (key == "tags" && value is IEnumerable<string> tags)
                     {
                         foreach (var tag in tags)
                             logLine.AddTag(tag);
                     }
-                    else if (key == "fields" && propertyPair.Value is IEnumerable<KeyValuePair<string, object>> bonusFields)
+                    else if (key == "fields" && value is IEnumerable<KeyValuePair<string, object>> bonusFields)
                     {
                         foreach (var kv in bonusFields)
                             logLine.AddField(kv.Key, kv.Value);
                     }
 
-                    logLine.AddField(key, propertyPair.Value);
+                    logLine.AddField(key, value);
                 }
             }
 
@@ -66,20 +67,24 @@ namespace Nlog.RabbitMQ.Target
                     logLine.AddField(field.Key, field.Name, field.Layout.Render(logEvent));
             }
 
-            if (logLine.Fields == null)
-                logLine.Fields = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
+            logLine.Fields ??= new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
 
-            if (logLine.Tags == null)
-                logLine.Tags = Array.Empty<string>();
+            logLine.Tags ??= Array.Empty<string>();
 
-            var serializedJson = JsonSerializer.Serialize(logLine, typeof(LogLine), _jsonOptions);
-            return  serializedJson;
+            string serializedJson = JsonConvert.SerializeObject(logLine, typeof(LogLine), _jsonOptions);
+            return serializedJson;
         }
 
-        private JsonSerializerOptions CreateJsonSerializerSettings()
+        private JsonSerializerSettings CreateJsonSerializerSettings()
         {
-            var jsonSerializerSettings = new JsonSerializerOptions { ReferenceHandler  = ReferenceHandler.IgnoreCycles };
-            jsonSerializerSettings.Converters.Add(new JsonStringEnumConverter());
+            var jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+            jsonSerializerSettings.Converters.Add(
+                new StringEnumConverter()
+                );
+
             return jsonSerializerSettings;
         }
     }

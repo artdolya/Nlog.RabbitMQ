@@ -18,12 +18,13 @@
 
 
     <ItemGroup>
-        <PackageReference Include="NLog" Version="5.4.0" />
-        <PackageReference Include="RabbitMQ.Client" Version="7.1.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="NLog" Version="6.0.1" />
+        <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\docs\readme.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\docs\readme.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
 </Project>
