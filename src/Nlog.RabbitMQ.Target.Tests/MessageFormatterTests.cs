@@ -1,7 +1,5 @@
-﻿using System.Text.Json;
-
 using FluentAssertions;
-
+using Newtonsoft.Json;
 using NLog;
 
 namespace Nlog.RabbitMQ.Target.Tests;
@@ -17,11 +15,11 @@ public class MessageFormatterTests
         string messageSource = "nlog://localhost/TestLogger";
         var logEvent = new LogEventInfo(logLevel, "TestLogger", logMessage);
         var messageFormatter = new MessageFormatter();
-       
+
         // Act
         var formattedMessage = messageFormatter.GetMessage(logMessage, messageSource, logEvent, null, null);
-        var deserializedMessage = JsonSerializer.Deserialize<LogLine>(formattedMessage);
-        
+        var deserializedMessage = JsonConvert.DeserializeObject<LogLine>(formattedMessage);
+
         // Assert
         deserializedMessage.Should().NotBeNull();
         deserializedMessage.Message.Should().Be(logMessage);
