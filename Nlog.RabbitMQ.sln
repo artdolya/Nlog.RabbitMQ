@@ -7,13 +7,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B2E4FF07-A0B
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5A26CA6D-64DF-4A0F-9FE2-D6BE96AB3F38}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
 		.editorconfig = .editorconfig
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Target", "src\Nlog.RabbitMQ.Target\Nlog.RabbitMQ.Target.csproj", "{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Target.Tests", "src\Nlog.RabbitMQ.Target.Tests\Nlog.RabbitMQ.Target.Tests.csproj", "{36A98B2A-610E-4034-8F16-2BC4A4768E65}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Target.Tests", "tests\Nlog.RabbitMQ.Target.Tests\Nlog.RabbitMQ.Target.Tests.csproj", "{36A98B2A-610E-4034-8F16-2BC4A4768E65}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{12266784-3C6A-4598-B593-8F84C4BCC0D2}"
 	ProjectSection(SolutionItems) = preProject
@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{1226
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nlog.RabbitMQ.Sample", "src\Nlog.RabbitMQ.Sample\Nlog.RabbitMQ.Sample.csproj", "{6CD9BEEC-158D-4CFE-B24F-A3E328782777}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,7 +50,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F19ED52D-06EE-4C1F-BE6C-060D891CCCF0} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
-		{36A98B2A-610E-4034-8F16-2BC4A4768E65} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
+		{36A98B2A-610E-4034-8F16-2BC4A4768E65} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{12266784-3C6A-4598-B593-8F84C4BCC0D2} = {5A26CA6D-64DF-4A0F-9FE2-D6BE96AB3F38}
 		{6CD9BEEC-158D-4CFE-B24F-A3E328782777} = {B2E4FF07-A0B1-40D5-A4E5-E1F778290C24}
 	EndGlobalSection
