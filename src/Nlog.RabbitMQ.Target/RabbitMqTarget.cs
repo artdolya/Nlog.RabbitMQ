@@ -1,18 +1,17 @@
+using NLog;
+using NLog.Common;
+using NLog.Config;
+using NLog.Layouts;
+using NLog.Targets;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-
-using NLog;
-using NLog.Common;
-using NLog.Config;
-using NLog.Layouts;
-using NLog.Targets;
-
-using RabbitMQ.Client;
 
 namespace Nlog.RabbitMQ.Target
 {
@@ -70,7 +69,7 @@ namespace Nlog.RabbitMQ.Target
             if (routingKey.IndexOf("{0}", StringComparison.Ordinal) >= 0)
                 routingKey = routingKey.Replace("{0}", logEvent.Level.Name);
 
-            IChannel channel = CreateChannel();
+            IChannel channel = CreateChannelAsync().GetAwaiter().GetResult(); ;
             BasicProperties basicProperties = GetBasicProperties(logEvent);
 
             byte[] bytes = _encoding.GetBytes(message);
@@ -83,15 +82,34 @@ namespace Nlog.RabbitMQ.Target
                    .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        private IChannel CreateChannel()
-        {
-            // lock to ensure that the channel is only created once
-            lock (this)
-            {
-                if (_channel == null || !_channel.IsOpen) _channel = _connection.CreateChannelAsync().Result;
-            }
+        private readonly SemaphoreSlim _channelLock = new(1, 1);
 
-            return _channel;
+        private async Task<IChannel> CreateChannelAsync()
+        {
+            await _channelLock.WaitAsync();
+            try
+            {
+                if (_channel == null || !_channel.IsOpen)
+                {
+                    if (_channel != null)
+                    {
+                        try
+                        {
+                            await _channel.DisposeAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            InternalLogger.Error("Error when disposing old channel", e);
+                        }
+                    }
+                    _channel = await _connection.CreateChannelAsync();
+                }
+                return _channel;
+            }
+            finally
+            {
+                _channelLock.Release();
+            }
         }
 
         private BasicProperties GetBasicProperties(LogEventInfo logEvent)
@@ -177,46 +195,40 @@ namespace Nlog.RabbitMQ.Target
 
         protected override void CloseTarget()
         {
-            Task.Run(async () =>
-                     {
-                         if (_channel != null && _channel.IsOpen)
-                             try
-                             {
-                                 await _channel.CloseAsync();
-                             }
-                             catch (Exception e)
-                             {
-                                 InternalLogger.Error("Error when closing channel", e);
-                             }
+            // Ensure all resources are disposed synchronously
+            try
+            {
+                if (_channel != null)
+                {
+                    if (_channel.IsOpen)
+                    {
+                        _channel.CloseAsync().GetAwaiter().GetResult();
+                    }
+                    _channel.DisposeAsync().GetAwaiter().GetResult();
+                    _channel = null;
+                }
+            }
+            catch (Exception e)
+            {
+                InternalLogger.Error("Error when closing/disposing channel", e);
+            }
 
-                         if (_connection != null && _connection.IsOpen)
-                             try
-                             {
-                                 await _connection.CloseAsync();
-                             }
-                             catch (Exception e)
-                             {
-                                 InternalLogger.Error("Error when closing connection", e);
-                             }
-
-                         try
-                         {
-                             if (_channel != null) await _channel.DisposeAsync();
-                         }
-                         catch (Exception e)
-                         {
-                             InternalLogger.Error("Error when disposing channel", e);
-                         }
-
-                         try
-                         {
-                             if (_connection != null) await _connection.DisposeAsync();
-                         }
-                         catch (Exception e)
-                         {
-                             InternalLogger.Error("Error when disposing connection", e);
-                         }
-                     });
+            try
+            {
+                if (_connection != null)
+                {
+                    if (_connection.IsOpen)
+                    {
+                        _connection.CloseAsync().GetAwaiter().GetResult();
+                    }
+                    _connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                    _connection = null;
+                }
+            }
+            catch (Exception e)
+            {
+                InternalLogger.Error("Error when closing/disposing connection", e);
+            }
             base.CloseTarget();
         }
 
