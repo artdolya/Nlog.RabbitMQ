@@ -216,7 +216,7 @@ namespace Nlog.RabbitMQ.Target
                     {
                         _connection.CloseAsync().GetAwaiter().GetResult();
                     }
-                    _connection.DisposeAsync().GetAwaiter().GetResult();
+                    _connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                     _connection = null;
                 }
             }
