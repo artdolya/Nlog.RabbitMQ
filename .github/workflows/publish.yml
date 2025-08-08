@@ -19,4 +19,5 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         with:
           dotnet-version: ${{ vars.DOTNET_VERSION }}
-          work-dir: './src/Nlog.RabbitMQ.Target'
+          work-dir: "./src/Nlog.RabbitMQ.Target"
+          signing-key: "Nlog.RabbitMQ.Target.snk"
