@@ -92,7 +92,7 @@ namespace Nlog.RabbitMQ.Target
                     {
                         try
                         {
-                            _channel.DisposeAsync().GetAwaiter().GetResult();
+                            _channel.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         }
                         catch (Exception e)
                         {
