@@ -10,6 +10,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nlog.RabbitMQ.Target
 {
@@ -67,7 +69,7 @@ namespace Nlog.RabbitMQ.Target
             if (routingKey.IndexOf("{0}", StringComparison.Ordinal) >= 0)
                 routingKey = routingKey.Replace("{0}", logEvent.Level.Name);
 
-            IChannel channel = CreateChannel();
+            IChannel channel = CreateChannelAsync().GetAwaiter().GetResult(); ;
             BasicProperties basicProperties = GetBasicProperties(logEvent);
 
             byte[] bytes = _encoding.GetBytes(message);
@@ -80,31 +82,34 @@ namespace Nlog.RabbitMQ.Target
                    .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        private IChannel CreateChannel()
+        private readonly SemaphoreSlim _channelLock = new(1, 1);
+
+        private async Task<IChannel> CreateChannelAsync()
         {
-            // lock to ensure that the channel is only created once
-            lock (this)
+            await _channelLock.WaitAsync();
+            try
             {
                 if (_channel == null || !_channel.IsOpen)
                 {
-                    // Dispose old channel if it exists
                     if (_channel != null)
                     {
                         try
                         {
-                            _channel.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                            await _channel.DisposeAsync();
                         }
                         catch (Exception e)
                         {
                             InternalLogger.Error("Error when disposing old channel", e);
                         }
                     }
-                    _channel = _connection.CreateChannelAsync().Result;
+                    _channel = await _connection.CreateChannelAsync();
                 }
                 return _channel;
             }
-
-            return _channel;
+            finally
+            {
+                _channelLock.Release();
+            }
         }
 
         private BasicProperties GetBasicProperties(LogEventInfo logEvent)
