@@ -1,11 +1,9 @@
+using NLog;
+using NLog.Layouts;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using NLog;
-using NLog.Layouts;
-
-using RabbitMQ.Client;
 
 namespace Nlog.RabbitMQ.Target;
 
@@ -15,6 +13,9 @@ public static class NlogTargetConfigExtensions
                                                                Func<Func<RabbitMqTarget, Layout>, string> layoutRenderer)
     {
         ConnectionFactory factory = new ConnectionFactory();
+        factory.RequestedHeartbeat = TimeSpan.FromSeconds(target.HeartBeatSeconds);
+        factory.RequestedConnectionTimeout = TimeSpan.FromMilliseconds(target.Timeout);
+        factory.AutomaticRecoveryEnabled = true;
         string sslCertPath = layoutRenderer(t => t.SslCertPath);
         string sslCertPassphrase = layoutRenderer(t => t.SslCertPassphrase);
         bool useSsl = layoutRenderer(t => t.UseSsl.ToString().ToLower()) == "true";

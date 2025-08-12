@@ -4,6 +4,7 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,7 +20,7 @@ namespace Nlog.RabbitMQ.Target
     ///     NLog target for writing to RabbitMQ Topic
     /// </summary>
     [Target("RabbitMq")]
-    public class RabbitMqTarget : TargetWithContext
+    public class RabbitMqTarget : AsyncTaskTarget
     {
         public enum CompressionTypes
         {
@@ -48,38 +49,59 @@ namespace Nlog.RabbitMQ.Target
         {
             LogEventInfo nullLogEvent = LogEventInfo.CreateNullEvent();
             _factory = this.GetRabbitMqFactoryFromConfig(f => RenderLogEvent(f(this), nullLogEvent));
-            _connection = _factory.CreateConnectionAsync().Result;
-            _channel = _connection.CreateChannelAsync().Result;
+            _connection = _factory.CreateConnectionAsync().GetAwaiter().GetResult();
+            _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
 
             _messageFormatter = new MessageFormatter();
             _exchange = RenderLogEvent(Exchange, nullLogEvent);
             string exchangeType = RenderLogEvent(ExchangeType, nullLogEvent);
-            _channel.ExchangeDeclareAsync(_exchange, exchangeType);
+
+            try
+            {
+                _channel.ExchangeDeclarePassiveAsync(_exchange).GetAwaiter().GetResult();
+            }
+            catch (OperationInterruptedException ex)
+                when (ex.ShutdownReason?.ReplyCode == 404) // NOT-FOUND (channel is now closed)
+            {
+                try { _channel?.DisposeAsync().GetAwaiter().GetResult(); } catch { /* ignore */ }
+                _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
+
+                _channel.ExchangeDeclareAsync(
+                        _exchange,
+                        exchangeType,
+                        durable: Durable,
+                        autoDelete: false,
+                        arguments: null)
+                    .GetAwaiter().GetResult();
+            }
+            catch (OperationInterruptedException ex)
+                when (ex.ShutdownReason?.ReplyCode == 406) // PRECONDITION_FAILED (mismatch)
+            {
+                InternalLogger.Warn(ex, $"Exchange '{_exchange}' exists with different properties; using existing.");
+            }
 
             base.InitializeTarget();
         }
 
-        protected override void Write(LogEventInfo logEvent)
+        protected override async Task WriteAsyncTask(LogEventInfo logEvent, CancellationToken token)
         {
             string renderedMessage = RenderLogEvent(Layout, logEvent);
-
             string message = UseJSON ? GetSerializedString(renderedMessage, logEvent) : renderedMessage;
 
             string routingKey = RenderLogEvent(Topic, logEvent);
             if (routingKey.IndexOf("{0}", StringComparison.Ordinal) >= 0)
                 routingKey = routingKey.Replace("{0}", logEvent.Level.Name);
 
-            IChannel channel = CreateChannelAsync().GetAwaiter().GetResult(); ;
-            BasicProperties basicProperties = GetBasicProperties(logEvent);
+            var channel = await CreateChannelAsync().ConfigureAwait(false);
+            var basicProperties = GetBasicProperties(logEvent);
+            var bytes = _encoding.GetBytes(message);
 
-            byte[] bytes = _encoding.GetBytes(message);
-
-            channel.BasicPublishAsync(_exchange,
-                                      routingKey,
-                                      true,
-                                      basicProperties,
-                                      Compression == CompressionTypes.GZip ? CompressMessage(bytes) : bytes)
-                   .ConfigureAwait(false).GetAwaiter().GetResult();
+            await channel.BasicPublishAsync(_exchange,
+                                            routingKey,
+                                            mandatory: false,   // avoid Basic.Return buffering unless you handle it
+                                            basicProperties,
+                                            Compression == CompressionTypes.GZip ? CompressMessage(bytes) : bytes,
+                                            token).ConfigureAwait(false);
         }
 
         private readonly SemaphoreSlim _channelLock = new(1, 1);
@@ -184,13 +206,12 @@ namespace Nlog.RabbitMQ.Target
         /// <returns></returns>
         private byte[] CompressMessageGZip(byte[] messageBytes)
         {
-            MemoryStream gzipCompressedMemStream = new();
-            using (GZipStream gzipStream = new(gzipCompressedMemStream, CompressionMode.Compress))
+            using var ms = new MemoryStream();
+            using (var gzip = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
             {
-                gzipStream.Write(messageBytes, 0, messageBytes.Length);
+                gzip.Write(messageBytes, 0, messageBytes.Length);
             }
-
-            return gzipCompressedMemStream.ToArray();
+            return ms.ToArray();
         }
 
         protected override void CloseTarget()
@@ -198,15 +219,20 @@ namespace Nlog.RabbitMQ.Target
             // Ensure all resources are disposed synchronously
             try
             {
-                if (_channel != null)
+                _channelLock.Wait();
+                try
                 {
-                    if (_channel.IsOpen)
+                    if (_channel != null)
                     {
-                        _channel.CloseAsync().GetAwaiter().GetResult();
+                        if (_channel.IsOpen)
+                        {
+                            _channel.CloseAsync().GetAwaiter().GetResult();
+                        }
+                        _channel.DisposeAsync().GetAwaiter().GetResult();
+                        _channel = null;
                     }
-                    _channel.DisposeAsync().GetAwaiter().GetResult();
-                    _channel = null;
                 }
+                finally { _channelLock.Release(); }
             }
             catch (Exception e)
             {
