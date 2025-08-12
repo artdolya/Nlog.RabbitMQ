@@ -26,7 +26,7 @@ var backgroundTask = Task.Run(async () =>
         var level = logLevels[random.Next(logLevels.Length)];
         var message = $"Random log at {DateTime.Now:O} with level {level}";
         logger.Log(level, message);
-        await Task.Delay(1, cts.Token);
+        await Task.Delay(1000, cts.Token);
     }
 }, cts.Token);
 
