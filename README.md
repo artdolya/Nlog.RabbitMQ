@@ -1,8 +1,37 @@
 # Nlog.RabbitMQ.Target
+
 RabbitMQ Target for popular NLog logging tool
 
 [![NuGet](https://img.shields.io/nuget/v/Nlog.RabbitMQ.Target.svg)](https://www.nuget.org/packages/Nlog.RabbitMQ.Target/)
 [![master](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml/badge.svg)](https://github.com/artdolya/Nlog.RabbitMQ/actions/workflows/bump.yml)
+
+## 🚀 Async RabbitMQ Target
+
+**New in vNEXT:** The RabbitMQ target is now fully asynchronous! Logging to RabbitMQ no longer blocks your application threads, resulting in improved performance and reliability, especially under high load or when the broker is slow/unavailable.
+
+### Benefits
+
+-   Non-blocking logging: your app remains responsive even if RabbitMQ is slow or down.
+-   Improved throughput and scalability.
+-   More robust error handling and buffering.
+
+### Migration Notes
+
+-   The target itself is now async; you do **not** need to wrap it in `<targets async="true">` (though you still can for extra safety).
+-   Buffering and message discarding now happen inside the RabbitMQ target. See `maxBuffer` for configuration.
+-   If you previously relied on the sync behavior, review your error handling and shutdown logic.
+-   No breaking changes to configuration, but you may want to tune `maxBuffer` and `Timeout` for your workload.
+
+### Example Configuration
+
+```xml
+<targets>
+  <target name="RabbitMqTarget"
+      xsi:type="RabbitMq"
+      useJSON="true"
+      layout="${message}" />
+</targets>
+```
 
 ## Minimum Recommended Configuration
 
@@ -50,9 +79,9 @@ Remember to mark your `NLog.config` file to be copied to the output directory!
 				correlationId=""
 				messageType=""
 				topic="DemoApp.Logging.${level}"
-				username="guest" 
-				password="guest" 
-				hostname="localhost" 
+				username="guest"
+				password="guest"
+				hostname="localhost"
 				exchange="app-logging"
 				exchangeType="topic"
 				clientProvidedName=""
@@ -88,8 +117,12 @@ Make the targets tag look like this: `<targets async="true"> ... </targets>` so 
 a failure of communication with RabbitMQ doesn't slow the application down. With this configuration
 an overloaded message broker will have 10000 messages buffered in the logging application
 before messages start being discarded. A downed message broker will have its messages
-in the *inner* target (i.e. RabbitMQ-target), not in the async buffer (as the RabbitMQ-target
+in the _inner_ target (i.e. RabbitMQ-target), not in the async buffer (as the RabbitMQ-target
 will not block which is what AsyncWrapperTarget buffers upon).
+
+---
+
+**Note:** As of vNEXT, the RabbitMQ target is itself asynchronous. Wrapping in `<targets async="true">` is optional and may provide additional buffering, but is no longer required for non-blocking logging.
 
 ## Important - shutting it down!
 
