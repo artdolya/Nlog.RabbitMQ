@@ -1,10 +1,10 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using NLog;
 
 namespace Nlog.RabbitMQ.Target
 {
@@ -28,7 +28,10 @@ namespace Nlog.RabbitMQ.Target
                 Source = messageSource,
             };
 
-            logLine.AddField("exception", logEvent.Exception);
+            if (logEvent.Exception != null)
+            {
+                logLine.AddField("exception", logEvent.Exception.ToString());
+            }
 
             if (logEvent.HasProperties)
             {
@@ -44,14 +47,19 @@ namespace Nlog.RabbitMQ.Target
                     {
                         foreach (var tag in tags)
                             logLine.AddTag(tag);
+                        continue;
                     }
                     else if (key == "fields" && value is IEnumerable<KeyValuePair<string, object>> bonusFields)
                     {
                         foreach (var kv in bonusFields)
-                            logLine.AddField(kv.Key, kv.Value);
+                        {
+                            var v = kv.Value;
+                            logLine.AddField(kv.Key, (v is string || v is ValueType) ? v : v?.ToString());
+                        }
+                        continue;
                     }
 
-                    logLine.AddField(key, value);
+                    logLine.AddField(key, (value is string || value is ValueType) ? value : value?.ToString());
                 }
             }
 

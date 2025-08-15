@@ -1,0 +1,6 @@
+@Nlog.RabbitMQ.WebSample_HostAddress = http://localhost:5281
+
+GET {{Nlog.RabbitMQ.WebSample_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
