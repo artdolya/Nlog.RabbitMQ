@@ -1,29 +1,30 @@
-﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Nlog.RabbitMQ.Target
 {
     public class LogLine
     {
-        [JsonPropertyName("@source")]
+        [JsonProperty("@source")]
         public string Source { get; set; }
 
-        [JsonPropertyName("@timestamp")]
+        [JsonProperty("@timestamp")]
         public string TimeStampISO8601 { get; set; }
 
-        [JsonPropertyName("@message")]
+        [JsonProperty("@message")]
         public string Message { get; set; }
 
-        [JsonPropertyName("@fields")]
+        [JsonProperty("@fields")]
         public IDictionary<string, object> Fields { get; set; }
 
-        [JsonPropertyName("@tags")]
+        [JsonProperty("@tags")]
         public ICollection<string> Tags { get; set; }
 
-        [JsonPropertyName("@type")]
+        [JsonProperty("@type")]
         public string Type { get; set; }
 
-        [JsonPropertyName("level")]
+        [JsonProperty("level")]
         public string Level { get; set; }
     }
 
