@@ -47,6 +47,26 @@ namespace Nlog.RabbitMQ.Target
 
         protected override void InitializeTarget()
         {
+            // Validate Fields configuration (RequiredParameterAttribute is obsolete in NLog v6+)
+            if (Fields != null)
+            {
+                var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var field in Fields)
+                {
+                    if (field == null)
+                        throw new NLogConfigurationException("Field configuration contains a null entry.");
+
+                    if (string.IsNullOrEmpty(field.Key))
+                        throw new NLogConfigurationException("Each <field> must specify a non-empty 'key'.");
+
+                    if (field.Layout == null)
+                        throw new NLogConfigurationException($"Field '{field.Key}' must specify a Layout.");
+
+                    if (!seenKeys.Add(field.Key))
+                        throw new NLogConfigurationException($"Duplicate field key '{field.Key}' in configuration.");
+                }
+            }
+
             LogEventInfo nullLogEvent = LogEventInfo.CreateNullEvent();
             _factory = this.GetRabbitMqFactoryFromConfig(f => RenderLogEvent(f(this), nullLogEvent));
             _connection = _factory.CreateConnectionAsync().GetAwaiter().GetResult();

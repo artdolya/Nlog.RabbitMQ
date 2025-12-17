@@ -1,4 +1,4 @@
-﻿using NLog.Config;
+using NLog.Config;
 using NLog.Layouts;
 
 namespace Nlog.RabbitMQ.Target
@@ -40,13 +40,11 @@ namespace Nlog.RabbitMQ.Target
         /// <summary>
         /// Gets or sets the key of the field
         /// </summary>
-        [RequiredParameter]
         public string Key { get; set; }
 
         /// <summary>
         /// Gets or sets the layout of the field
         /// </summary>
-        [RequiredParameter]
         public Layout Layout { get; set; }
     }
 }
